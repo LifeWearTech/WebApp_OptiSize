@@ -1,0 +1,370 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Product App</title>
+
+<style>
+
+/* ===============================
+   ✅ BASE
+=============================== */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #eae6e6;
+}
+
+/* ===============================
+   ✅ HERO
+=============================== */
+#hero {
+  height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #eae6e6;
+}
+
+#hero img {
+  max-width: 50%;
+  max-height: 50%;
+  object-fit: contain;
+  
+  /* ✅ MOVE LOGO DOWN */
+  transform: translateY(60px);
+
+}
+
+/* MENU BUTTON */
+
+#menu-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 30px;
+  font-weight: bold;
+
+  padding: 10px 20px; /* ✅ wider button */
+
+  color: rgb(12, 12, 12);
+  background: rgba(156, 155, 155, 0.4);
+  border-radius: 10px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+
+/* ===============================
+   ✅ CONTENT
+=============================== */
+#content {
+  height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  
+ /* ✅ MOVE TEXT UP */
+  transform: translateY(-80px);
+
+}
+
+#content-text {
+  font-size: 18px;
+  max-width: 320px;
+}
+
+/* ===============================
+   ✅ DRAWER
+=============================== */
+#drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 90%;
+  max-width: 320px;
+  height: 100%;
+  background: #eae6e6;
+
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+
+  z-index: 9999;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+#drawer.open {
+  transform: translateX(0);
+}
+
+/* HEADER */
+.drawer-header {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-header img {
+  max-height: 100px;
+}
+
+/* SECTION TITLES */
+.drawer-section-title {
+  background: #ddd;
+  padding: 6px 10px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* ITEMS */
+.drawer-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.drawer-item:hover {
+  background: #f2f2f2;
+}
+
+.drawer-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.drawer-text {
+  color: rgb(188, 2, 2);
+  font-weight: bold;
+  font-size: 18px;
+  font-style: italic;
+}
+
+/* OVERLAY */
+#overlay-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s;
+}
+
+#overlay-bg.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+</style>
+</head>
+
+<body>
+
+
+<!-- HERO -->
+<div id="hero">
+  <img src="/assets/Logo_Icons/Logo_Home_Page.png" alt="Logo">
+  <div id="menu-btn">☰</div>
+</div>
+
+
+<!-- TEXT -->
+<div id="content">
+  <div id="content-text">
+    Welcome! Use the menu to explore products and measure sizes.
+  </div>
+</div>
+
+
+<!-- DRAWER -->
+<div id="drawer">
+
+  <!-- HEADER -->
+  <div class="drawer-header">
+    <img src="/assets/icons/MainIcon2.png" alt="App Logo">
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="drawer-section-title" style="color: rgb(17, 17, 17);">Products</div>
+
+  <div class="drawer-item" id="browse-knee">
+    <img src="/assets/icons/knee.svg" class="drawer-icon">
+    <div class="drawer-text">Knee Products</div>
+  </div>
+
+  <div class="drawer-item" id="browse-ankle">
+    <img src="/assets/icons/ankle.svg" class="drawer-icon">
+    <div class="drawer-text">Ankle Products</div>
+  </div>
+
+  <div class="drawer-item" id="browse-wrist">
+    <img src="/assets/icons/wrist.svg" class="drawer-icon">
+    <div class="drawer-text">Wrist Products</div>
+  </div>
+
+  <div class="drawer-item" id="browse-elbow">
+    <img src="/assets/icons/elbow.svg" class="drawer-icon">
+    <div class="drawer-text">Elbow Products</div>
+  </div>
+
+  <!-- SCAN & MEASURE -->
+  <div class="drawer-section-title">Scan and Measure</div>
+
+  <div class="drawer-item" id="scan-btn">
+    <img src="/assets/icons/barcodescanner_icon.svg" class="drawer-icon">
+    <div class="drawer-text">Scan Products</div>
+  </div>
+
+  <div class="drawer-item" id="measure-knee">
+    <img src="/assets/icons/knee.svg" class="drawer-icon">
+    <div class="drawer-text">Measure Knee</div>
+  </div>
+
+  <div class="drawer-item" id="measure-ankle">
+    <img src="/assets/icons/ankle.svg" class="drawer-icon">
+    <div class="drawer-text">Measure Ankle</div>
+  </div>
+
+  <div class="drawer-item" id="measure-wrist">
+    <img src="/assets/icons/wrist.svg" class="drawer-icon">
+    <div class="drawer-text">Measure Wrist</div>
+  </div>
+
+  <div class="drawer-item" id="measure-elbow">
+    <img src="/assets/icons/elbow.svg" class="drawer-icon">
+    <div class="drawer-text">Measure Elbow</div>
+  </div>
+
+  
+<!-- GENERAL -->
+<div class="drawer-section-title">General</div>
+
+<div class="drawer-item" id="about-btn">
+  <img src="/assets/icons/aboutus_icon.svg" class="drawer-icon">
+  <div class="drawer-text">About Us</div>
+</div>
+
+<div class="drawer-item" id="contact-btn">
+  <img src="/assets/icons/contactus_icon.svg" class="drawer-icon">
+  <div class="drawer-text">Contact Us</div>
+</div>
+
+<div class="drawer-item" id="privacy-btn">
+  <img src="/assets/icons/privacypolicy_icon.svg" class="drawer-icon">
+  <div class="drawer-text">Privacy Policy</div>
+</div>
+
+<div class="drawer-item" id="terms-btn">
+  <img src="/assets/icons/termsandconditions_icon.svg" class="drawer-icon">
+  <div class="drawer-text">Terms & Conditions</div>
+</div>
+
+
+</div>
+
+
+<div id="overlay-bg"></div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const drawer = document.getElementById("drawer");
+  const overlay = document.getElementById("overlay-bg");
+  const menuBtn = document.getElementById("menu-btn");
+
+  function openDrawer() {
+    drawer.classList.add("open");
+    overlay.classList.add("show");
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove("open");
+    overlay.classList.remove("show");
+  }
+
+  // OPEN
+  menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    openDrawer();
+  };
+
+  // OUTSIDE CLICK
+  overlay.onclick = () => {
+    closeDrawer();
+    setTimeout(() => {
+      location.href = "/main_Android.html";
+    }, 120);
+  };
+
+  function go(url) {
+    closeDrawer();
+    setTimeout(() => {
+      location.href = url;
+    }, 120);
+  }
+
+  // PRODUCTS
+  document.getElementById("browse-knee").onclick = () =>
+    go(`/pages/Android/Android_browse.html?type=Knee`);
+
+  document.getElementById("browse-ankle").onclick = () =>
+    go(`/pages/Android/Android_browse.html?type=Ankle`);
+
+  document.getElementById("browse-wrist").onclick = () =>
+    go(`/pages/Android/Android_browse.html?type=Wrist`);
+
+  document.getElementById("browse-elbow").onclick = () =>
+    go(`/pages/Android/Android_browse.html?type=Elbow`);
+
+  // MEASURE
+
+   document.getElementById("scan-btn").onclick = () =>
+     go("/pages/Android/Android_scan.html");
+
+
+  document.getElementById("measure-knee").onclick = () =>
+    go(`/pages/Android/Android_instructions.html?p=Knee`);
+
+  document.getElementById("measure-ankle").onclick = () =>
+    go(`/pages/Android/Android_instructions.html?p=Ankle`);
+
+  document.getElementById("measure-wrist").onclick = () =>
+    go(`/pages/Android/Android_instructions.html?p=Wrist`);
+
+  document.getElementById("measure-elbow").onclick = () =>
+    go(`/pages/Android/Android_instructions.html?p=Elbow`);
+
+  // GENERAL
+
+  
+    document.getElementById("about-btn").onclick = () =>
+    go(`/pages/Android/Android_Aboutus.html`);
+
+    document.getElementById("contact-btn").onclick = () =>
+    go(`/pages/Android/Android_contactus.html`);
+
+
+  document.getElementById("privacy-btn").onclick = () =>
+    go(`/pages/Android/Android_privacy.html`);
+
+  document.getElementById("terms-btn").onclick = () =>
+    go(`/pages/Android/Android_terms.html`);
+
+  document.getElementById("home-btn").onclick = () =>
+    go(`/main_Android.html`);
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Privacy Policy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    html {
+      font-size: 18px;
+    }
+
+    body {
+      margin: 0;
+
+      /* =========================
+         🎨 PROFESSIONAL LIGHT THEME
+      ========================= */
+      --bg-color: #f8fafc;     /* ✅ soft clean background */
+      --text-color: #1e293b;   /* ✅ main readable text */
+      --muted-color: #475569;  /* ✅ softer heading tone */
+      --link-color: #2563eb;   /* ✅ modern blue links */
+
+      background: var(--bg-color);
+      color: var(--text-color);
+
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.65;
+    }
+
+    /* =========================
+       📦 CONTENT CARD
+    ========================= */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 28px;
+
+      background: #eae6e6;  /* ✅ white card */
+      border-radius: 12px;
+
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* =========================
+       🔙 BACK LINK
+    ========================= */
+/* Back Link */
+.back{
+    position:fixed;
+    top:16px;
+    right:16px;
+    z-index:1000;
+}
+
+a{
+    color:#2563eb;
+    text-decoration:none;
+    font-weight:500;
+}
+
+    /* =========================
+       🏷️ HEADINGS (tight + clean)
+    ========================= */
+    h1, h2, h3 {
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-top: 1.6rem;
+      margin-bottom: 0.6rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin-top: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      margin-top: 1.2rem;
+      margin-bottom: 0.4rem;
+      color: var(--muted-color);
+    }
+
+    /* =========================
+       📝 TEXT SPACING (FIXED ✅)
+    ========================= */
+    p {
+      margin: 0.6rem 0;
+    }
+
+    /* =========================
+       📋 LISTS
+    ========================= */
+    ul {
+      padding-left: 1.2rem;
+      margin: 0.6rem 0;
+    }
+
+    li {
+      margin-bottom: 0.35rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  
+  <main class="container">
+    <a href="/" class="back"><span class="material-icons">home</span></a>
+    <div id="content">Loading…</div>
+  </main>
+
+  <script>
+    fetch("/assets/markdown/privacy_policy.md")
+      .then(res => res.text())
+      .then(md => {
+
+        // ✅ Escape HTML safely
+        md = md
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        // ✅ Convert headings
+        md = md
+          .replace(/^### (.*)$/gim, "<h3>$1</h3>")
+          .replace(/^## (.*)$/gim, "<h2>$1</h2>")
+          .replace(/^# (.*)$/gim, "<h1>$1</h1>");
+
+        // ✅ Bold and italics
+        md = md.replace(/\*\*(.+?)\*\*/gim, "<strong>$1</strong>");
+        md = md.replace(/\*(.+?)\*/gim, "<em>$1</em>");
+
+        // ✅ Lists
+        md = md.replace(/^\s*-\s+(.*)$/gim, "<li>$1</li>");
+        md = md.replace(/(<li>.*<\/li>)/gims, "<ul>$1</ul>");
+
+        // ✅ PROFESSIONAL BLOCK PARSING (key improvement)
+        let blocks = md.split(/\n\s*\n/);
+
+        blocks = blocks.map(block => {
+          block = block.trim();
+
+          // keep headings and lists clean
+          if (block.startsWith("<h") || block.startsWith("<ul>")) {
+            return block;
+          }
+
+          return `<p>${block.replace(/\n/g, "<br>")}</p>`;
+        });
+
+        md = blocks.join("");
+
+        document.getElementById("content").innerHTML = md;
+      });
+  </script>
+
+</body>
+</html>

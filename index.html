@@ -1,0 +1,46 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Redirecting...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script>
+    (function () {
+
+      function isIOSSafari() {
+        const ua = navigator.userAgent;
+
+        const isIOS =
+          /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+        const isSafari =
+          ua.includes("Safari") &&
+          !ua.includes("CriOS") &&
+          !ua.includes("FxiOS") &&
+          !ua.includes("EdgiOS");
+
+        return isIOS && isSafari;
+      }
+
+      // ✅ Redirect immediately
+      if (isIOSSafari()) {
+        window.location.replace("/main_ios.html");
+      } else {
+        // ✅ Android + everything else goes here
+        window.location.replace("/main_android.html");
+      }
+
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- Optional fallback message -->
+  <p style="text-align:center; color:#999; margin-top:20%;">
+    Redirecting to experience...
+  </p>
+</body>
+</html>

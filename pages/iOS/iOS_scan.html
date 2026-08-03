@@ -1,0 +1,301 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Scan Barcode</title>
+
+<style>
+
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+}
+
+video {
+  position: fixed;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+#back {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+
+  z-index: 1000;
+  cursor: pointer;
+}
+
+#guide {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 80vw;
+  max-width: 420px;
+  height: 22vh;
+
+  border: 3px solid red;
+  border-radius: 10px;
+
+  box-shadow:
+    0 0 0 9999px rgba(0,0,0,.5),
+    0 0 12px red;
+
+  pointer-events: none;
+}
+
+</style>
+
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+
+</head>
+
+<body>
+
+<div id="back">← Back</div>
+
+<video
+  id="video"
+  autoplay
+  playsinline
+  muted>
+</video>
+
+<div id="guide"></div>
+
+<script>
+
+/* ==================================================
+   GLOBALS
+================================================== */
+
+const video = document.getElementById("video");
+let zxingReader = null;
+let scanning = false;
+let timeoutId = null;
+
+
+/* ==================================================
+   TIMEOUT
+================================================== */
+
+function resetTimeout() {
+
+  clearTimeout(timeoutId);
+
+  timeoutId = setTimeout(() => {
+
+    stopScanner();
+
+    window.location.replace("/main_iOS.html");
+
+  }, 20000);
+}
+
+/* ==================================================
+   STOP SCANNER
+================================================== */
+
+function stopScanner() {
+
+  scanning = false;
+
+  clearTimeout(timeoutId);
+
+  if (zxingReader) {
+
+    try {
+      zxingReader.reset();
+    } catch (e) {
+      console.log(e);
+    }
+
+    zxingReader = null;
+  }
+
+  try {
+
+    video.pause();
+
+    video.srcObject = null;
+
+    video.removeAttribute("src");
+
+    video.load();
+
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+
+
+
+/* ==================================================
+   ZXING
+================================================== */
+
+function startZXingScanner() {
+
+  zxingReader =
+    new ZXing.BrowserBarcodeReader();
+
+  zxingReader.decodeFromConstraints(
+    {
+      video: {
+        facingMode: "environment"
+      }
+    },
+
+    video,
+
+    (result, err) => {
+
+
+    if (!scanning) return;
+
+    if (result && result.text) {
+
+    scanning = false;
+
+    const barcode =
+      result.text.trim();
+
+    if (!barcode) return;
+
+    stopScanner();
+
+    window.location.href =
+      "/pages/iOS/iOS_scanned_product.html?barcode=" +
+      encodeURIComponent(barcode);
+    }
+
+    }
+  );
+}
+
+/* ==================================================
+   START SCANNER
+================================================== */
+
+
+async function startScanner() {
+  if (scanning) return;
+  stopScanner();
+
+  try {
+
+
+        
+   if (!window.ZXing) {
+  throw new Error("ZXing library failed to load.");
+   }
+
+    scanning = true;
+    resetTimeout();
+    startZXingScanner();
+
+  }
+  catch (err) {
+
+    console.error(err);
+
+    alert(
+      "Scanner Error\n\n" +
+      (err.message || err)
+    );
+  }
+}
+
+
+/* ==================================================
+   BACK BUTTON
+================================================== */
+
+document
+.getElementById("back")
+.addEventListener("click", () => {
+
+  stopScanner();
+
+  window.location.replace("/main_iOS.html");
+
+});
+
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if (document.hidden) {
+      stopScanner();
+    }
+  }
+);
+
+
+/* ==================================================
+   IOS SAFARI LIFECYCLE
+================================================== */
+
+window.addEventListener(
+  "pagehide",
+  () => {
+    stopScanner();
+  }
+);
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+    stopScanner();
+  }
+);
+
+window.addEventListener(
+  "pageshow",
+  (event) => {
+
+    if (event.persisted) {
+
+      stopScanner();
+
+      startScanner();
+    }
+  }
+);
+
+/* ==================================================
+   START APP
+================================================== */
+
+window.addEventListener(
+  "load",
+  () => {
+
+    startScanner();
+
+  }
+);
+
+</script>
+
+</body>
+</html>

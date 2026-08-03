@@ -1,0 +1,157 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Select Retailer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+
+      /* ✅ MATCH MAIN ANDROID */
+      --bg-color: #eae6e6;
+      background: var(--bg-color);
+
+      font-family: system-ui, sans-serif;
+      text-align: center;
+
+      /* ✅ BUTTON COLOR CONTROL */
+      --see-products-bg: #16a34a;  /* ✅ change this */
+      --see-products-text: #ffffff;
+    }
+
+    .container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 85%;
+      max-width: 420px;
+    }
+
+    /* ✅ TITLE COLOR FIX */
+    h1 {
+      font-size: 22px;
+      margin-bottom: 1.5rem;
+      color: black;   /* ✅ force black */
+    }
+
+
+select {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 18px;
+
+  border-radius: 10px;
+
+  border: 2px solid black;   /* ✅ THIS is the fix */
+
+  margin-bottom: 2rem;
+
+  background: white;         /* ✅ ensures clean look */
+  color: black;
+}
+
+    /* ✅ BUTTON CONTROLLED BY VARIABLE */
+    button {
+      padding: 1rem 1.5rem;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+
+      background: var(--see-products-bg);
+      color: var(--see-products-text);
+
+      cursor: pointer;
+      width: 100%;
+    }
+  
+/* Home Button */
+.home-btn{
+  position:fixed;
+  top:16px;
+  right:16px;
+
+  color:#2563eb;
+  text-decoration:none;
+
+  z-index:1000;
+}
+  </style>
+</head>
+
+<body>
+
+  
+<a href="/" class="home-btn"><span class="material-icons">home</span></a>
+
+<div class="container">
+
+
+  <h1>Select Retailer</h1>
+
+  <select id="retailer-select">
+    <option>Loading...</option>
+  </select>
+
+  <button id="continue-btn">See Products</button>
+</div>
+
+<script>
+(async function () {
+
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get("type") || "Knee";
+
+  const select = document.getElementById("retailer-select");
+  const button = document.getElementById("continue-btn");
+
+  try {
+    const res = await fetch("/assets/ProductData/ProductsJsonFile.json");
+    const products = await res.json();
+
+    const retailers = products
+      .filter(p => !p.obsolete)
+      .map(p => (p.Retail || "").trim())
+      .filter(r => r.length > 0);
+
+    const uniqueRetailers = [...new Set(retailers)]
+      .sort((a, b) => a.localeCompare(b));
+
+    const finalList = ["All", ...uniqueRetailers];
+
+    select.innerHTML = "";
+    finalList.forEach(r => {
+      const option = document.createElement("option");
+      option.value = r;
+      option.textContent = r;
+      select.appendChild(option);
+    });
+
+  } catch (err) {
+    console.error(err);
+    select.innerHTML = "<option>Error loading retailers</option>";
+  }
+
+  button.onclick = () => {
+    const retailer = select.value;
+    const width = params.get("width") || "";
+
+    const url =
+      "/pages/iOS/iOS_results.html" +
+      "?type=" + encodeURIComponent(type) +
+      "&width=" + encodeURIComponent(width) +
+      "&retailer=" + encodeURIComponent(retailer);
+
+    window.location.href = url;
+  };
+
+})();
+</script>
+
+</body>
+</html>

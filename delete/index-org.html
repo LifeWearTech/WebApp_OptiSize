@@ -1,0 +1,427 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Product Selection</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    html { font-size: 19px; }
+
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+      text-align: center;
+    }
+
+    
+    #product-select-wrapper h1 {
+      font-size: 20px; /* reduce as desired */
+    }
+
+
+    /* ===== HOME UI ===== */
+
+    #product-select-wrapper {
+      position: fixed;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      max-width: 420px;
+    }
+
+    select {
+      padding: 0.8rem;
+      width: 100%;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .main-btn {
+      padding: 1rem 2rem;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00c896, #009f75);
+      color: white;
+      cursor: pointer;
+      margin-top: 1rem;
+      width: 80%;
+    }
+
+    .policy-btn {
+      font-size: 16px;
+      background: #222;
+      border: 1px solid #00c896;
+    }
+
+    /* ===== SCANNER ===== */
+
+    #scanner-overlay {
+      position: fixed;
+      inset: 0;
+      background: black;
+      z-index: 10000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    video {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 12px;
+    }
+
+    #barcode-guide {
+      position: absolute;
+      width: 80vw;
+      max-width: 420px;
+      height: 22vh;
+      border: 3px solid #ff2d2d;
+      border-radius: 12px;
+      pointer-events: none;
+      box-shadow:
+        0 0 0 9999px rgba(0,0,0,0.45),
+        0 0 12px rgba(255,45,45,0.85);
+    }
+
+    /* ===== RESULT ===== */
+
+    #scan-result {
+      display: none;
+      min-height: 100vh;
+      padding: 1rem;
+      padding-bottom: 6.5rem;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    /* ===== PRODUCT CARD ===== */
+
+    .product-card {
+      background: linear-gradient(135deg, #f5f5f5, #dcdcdc);
+      color: black;
+      border-radius: 15px;
+      border: 2px solid black;
+      padding: 14px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .product-image {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .product-title {
+      font-size: 18px;
+      font-weight: bold;
+      font-style: italic;
+      margin-bottom: 6px;
+    }
+
+    .product-desc-line {
+      font-size: 16px;
+      margin: 3px 0;
+    }
+
+    .product-section-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .product-size-line {
+      font-size: 16px;
+      margin: 3px 0;
+    }
+
+    .product-vendor {
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    .selected-tile {
+      outline: 3px solid lime;
+    }
+
+    /* ===== ACTION BAR ===== */
+
+    .action-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 1rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      background: rgba(17,17,17,0.95);
+    }
+
+    .action-btn {
+      flex: 1;
+      max-width: 220px;
+      padding: 1rem;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 14px;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    #continue-btn {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    #continue-btn.enabled {
+      background: linear-gradient(135deg, #00c896, #009f75);
+      cursor: pointer;
+    }
+
+    #rescan-btn {
+      background: linear-gradient(135deg, #ff8c42, #e0671f);
+    }
+    
+  </style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<main id="product-select-wrapper">
+  <h1>Select Product Type</h1>
+
+  <select id="product-select">
+    <option value="Knee">Knee</option>
+    <option value="Ankle">Ankle</option>
+  </select>
+
+  <button class="main-btn" id="measure-btn">Measure Size</button>
+  <button class="main-btn" id="browse-btn">Browse Products</button>
+  <button class="main-btn" id="scan-btn">Scan Barcode</button>
+
+  <button class="main-btn policy-btn" id="privacy-btn">Privacy Policy</button>
+  <button class="main-btn policy-btn" id="terms-btn">Terms & Conditions</button>
+</main>
+
+<!-- SCANNER -->
+<div id="scanner-overlay">
+  <video id="video" autoplay playsinline></video>
+  <div id="barcode-guide"></div>
+</div>
+
+<!-- RESULT -->
+<section id="scan-result">
+  <h2>Scanned Product</h2>
+  <div id="products-container"></div>
+
+  <div class="action-bar">
+    <button id="rescan-btn" class="action-btn">Rescan</button>
+    <button id="continue-btn" class="action-btn">Continue</button>
+  </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const home = document.getElementById("product-select-wrapper");
+  const overlay = document.getElementById("scanner-overlay");
+  const results = document.getElementById("scan-result");
+  const video = document.getElementById("video");
+
+  const scanBtn = document.getElementById("scan-btn");
+  const rescanBtn = document.getElementById("rescan-btn");
+  const continueBtn = document.getElementById("continue-btn");
+  const container = document.getElementById("products-container");
+  const productSelect = document.getElementById("product-select");
+
+  let stream = null;
+  let detector = null;
+  let scanning = false;
+  let selectedProduct = null;
+
+  /* ---------- Navigation ---------- */
+
+  document.getElementById("measure-btn").onclick = () =>
+    location.href = `/pages/instructions.html?p=${productSelect.value}`;
+
+  document.getElementById("browse-btn").onclick = () =>
+    location.href = `/pages/browse.html?type=${productSelect.value}`;
+
+  document.getElementById("privacy-btn").onclick = () =>
+    location.href = `/pages/privacy.html`;
+
+  document.getElementById("terms-btn").onclick = () =>
+    location.href = `/pages/terms.html`;
+
+  /* ---------- Scanner ---------- */
+
+  async function startScanner(push = true) {
+    detector = new BarcodeDetector({
+      formats: ["ean_13", "upc_a", "code_128"]
+    });
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    scanning = true;
+    home.style.display = "none";
+    results.style.display = "none";
+    overlay.style.display = "flex";
+
+    if (push) history.pushState({ view: "scanner" }, "");
+    requestAnimationFrame(scanLoop);
+  }
+
+  function stopScanner() {
+    scanning = false;
+    overlay.style.display = "none";
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  }
+
+  async function scanLoop() {
+    if (!scanning) return;
+
+    if (video.readyState < 2) {
+      requestAnimationFrame(scanLoop);
+      return;
+    }
+
+    const codes = await detector.detect(video);
+    if (codes.length) {
+      stopScanner();
+      showProduct(codes[0].rawValue, true);
+      return;
+    }
+
+    requestAnimationFrame(scanLoop);
+  }
+
+  scanBtn.onclick = () => startScanner(true);
+
+  /* ---------- Product ---------- */
+
+  function normalize(code) {
+    let d = String(code).replace(/\D/g, "");
+    if (d.length === 13 && d.startsWith("0")) d = d.slice(1);
+    return d;
+  }
+
+  async function showProduct(barcode, push) {
+    container.innerHTML = "";
+    continueBtn.classList.remove("enabled");
+    selectedProduct = null;
+
+    const res = await fetch("/assets/ProductData/ProductsJsonFile.json");
+    const products = await res.json();
+    const scanned = normalize(barcode);
+
+    const p = products.find(
+      x => !x.obsolete && normalize(x.id) === scanned
+    );
+
+    if (!p) {
+      container.textContent = "Product not found.";
+      results.style.display = "block";
+      return;
+    }
+
+    const card = document.createElement("div");
+    card.className = "product-card";
+
+    /* ✅ ONLY CHANGE: proper image creation */
+    const img = document.createElement("img");
+    img.className = "product-image";
+    img.src = p.image;
+    img.alt = p.name;
+    card.appendChild(img);
+
+    /* Rest unchanged */
+    const title = document.createElement("div");
+    title.className = "product-title";
+    title.textContent = p.name;
+    card.appendChild(title);
+
+    p.desc.forEach(d => {
+      const line = document.createElement("div");
+      line.className = "product-desc-line";
+      line.textContent = "• " + d;
+      card.appendChild(line);
+    });
+
+    const sizeTitle = document.createElement("div");
+    sizeTitle.className = "product-section-title";
+    sizeTitle.textContent = "Available Sizes";
+    card.appendChild(sizeTitle);
+
+    p.sizes.forEach(s => {
+      const sizeLine = document.createElement("div");
+      sizeLine.className = "product-size-line";
+      sizeLine.textContent = s;
+      card.appendChild(sizeLine);
+    });
+
+    const vendor = document.createElement("div");
+    vendor.className = "product-vendor";
+    vendor.innerHTML = `Retailer: <strong>${p.Retail}</strong>`;
+    card.appendChild(vendor);
+
+    card.onclick = () => {
+      document.querySelectorAll(".product-card")
+        .forEach(c => c.classList.remove("selected-tile"));
+      card.classList.add("selected-tile");
+      selectedProduct = p;
+      continueBtn.classList.add("enabled");
+    };
+
+    container.appendChild(card);
+    results.style.display = "block";
+
+    if (push) history.pushState({ view: "result" }, "");
+  }
+
+  /* ---------- Actions ---------- */
+
+  rescanBtn.onclick = () => startScanner(true);
+
+
+continueBtn.onclick = () => {
+  if (!selectedProduct) return;
+  location.href =
+    "/pages/instructions.html" +
+    "?p=" + encodeURIComponent(selectedProduct.product_type) +
+    "&prod=" + encodeURIComponent(selectedProduct.id);
+};
+
+
+});
+</script>
+
+</body>
+</html>

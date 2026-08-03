@@ -1,0 +1,590 @@
+[
+
+  {
+    "id": "472994",
+    "name": "Knee Support Sleeve",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Mild Compression",
+      "Help support injured or weak knees",
+      "All-day comfort",
+      "Easy to wear",
+      "1 KNEE SLEEVE"
+    ],
+    "image": "assets/Knee_Products/472994_1.jpg",
+    "sizes": ["S/M/L/XL"],
+    "number_of_sizes": 4,
+    "size_ranges": {
+      "S": {"low": 4.0, "high": 5.0},
+      "M": {"low": 5.0, "high": 6.0},
+      "L": {"low": 6.0, "high": 7.0},
+      "XL": {"low": 7.0, "high": 8.0}
+    },
+    "Retail": "CVS",
+    "rating": 4.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "453877",
+    "name": "Copper Compression Sleeve KNEE",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "COPPER-INFUSED FIBER",
+      "For athletic & everyday wear",
+      "Help relieve soreness",
+      "Odor-resistant fabric wicks away moisture",
+      "1 LARGE SLEEVE"
+    ],
+    "image": "assets/Knee_Products/453877_1.jpg",
+    "sizes": ["L/XL"],
+    "number_of_sizes": 2,
+    "size_ranges": {
+      "L": {"low": 6.0, "high": 7.0},
+      "XL": {"low": 7.0, "high": 8.0}
+    },
+    "Retail": "CVS",
+    "rating": 4.7,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "871530",
+    "name": "Knee Brace",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Knee brace adjustable",
+      "3-strap countered design",
+      "Sleeve for ease of use and comfort",
+      "Adjustable support and compression",
+      "1 BRACE",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/871530.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.6, "high": 8.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "875413",
+    "name": "Knee Support",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Elastic",
+      "Countered Compression",
+      "Moderate Support",
+      "1 Support",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/875413_1.jpg",
+    "sizes": ["S-M/L-XL"],
+    "number_of_sizes": 2,
+    "size_ranges": {
+      "S-M": {"low": 4.0, "high": 6.0},
+      "L-XL": {"low": 6.0, "high": 8.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "875485",
+    "name": "Knee Compression Sleeve",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Copper Infused",
+      "Helps relieve soreness",
+      "1 Support",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/875485_1.jpg",
+    "sizes": ["L/XL"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "L/XL": {"low": 6.0, "high": 8.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "876403",
+    "name": "Knee Stabilizer",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Elastic Dual Stabilizer for support",
+      "Countered Compression",
+      "1 Support",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/876403_1.jpg",
+    "sizes": ["S-M/L-XL"],
+    "number_of_sizes": 2,
+    "size_ranges": {
+      "S-M": {"low": 4.0, "high": 6.0},
+      "L-XL": {"low": 6.0, "high": 8.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "379014",
+    "name": "Walgreens Knee Support",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Copper infused fabric",
+      "Adjustable and Ultra plush fit",
+      "1 Knee Support",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/379014.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.6, "high": 8.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "973064",
+    "name": "Walgreens Knee Sleeve",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Copper infused fabric",
+      "Compression",
+      "Moderate Support",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/973064_1.jpg",
+    "sizes": ["M/L"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "M/L": {"low": 5.0, "high": 7.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "742795",
+    "name": "Walgreens Knee Brace",
+    "product_type": "Knee",
+    "obsolete": false,
+    "desc": [
+      "Great for sensitive skin",
+      "Moderate support",
+      "Adjustable support and compression",
+      "1 BRACE",
+      "Fits left or Right Knee"
+    ],
+    "image": "assets/Knee_Products/742795.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.6, "high": 8.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+
+  {
+    "id": "151480",
+    "name": "Ankle Support Sleeve",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Mild Compression",
+      "Help support injured or weak ankles",
+      "All-day comfort",
+      "Easy to wear",
+      "1 ANKLE SLEEVE"
+    ],
+    "image": "assets/Ankle_Products/151480_1.jpg",
+    "sizes": ["S/M/L"],
+    "number_of_sizes": 3,
+    "size_ranges": {
+      "S": {"low": 3.5, "high": 4.0},
+      "M": {"low": 4.0, "high": 4.5},
+      "L": {"low": 4.5, "high": 5.0}
+    },
+    "Retail": "CVS",
+    "rating": 4.7,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "870510",
+    "name": "ADJUSTABLE ANKLE SUPPORT",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Ankle Support",
+      "Adjustable compression",
+      "Adjustable support",
+      "One size fits most,",
+      "1 SUPPORT, Fits left or right ankle"
+    ],
+    "image": "assets/Ankle_Products/870510.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.5, "high": 5.5}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "875513",
+    "name": "Ankle Support ",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Elastic, Countered Compression",
+      "Moderate Support",
+      "1 Support",
+      "Fits left or Right Ankle"
+    ],
+    "image": "assets/Ankle_Products/875513_1.jpg",
+    "sizes": ["S-M/L-XL"],
+    "number_of_sizes": 2,
+    "size_ranges": {
+      "S-M": {"low": 3.5, "high": 4.5},
+      "L-XL": {"low": 4.5, "high": 5.5}
+    },
+    "Retail": "Walmart",
+    "rating": 4.6,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "875585",
+    "name": "Ankle Compression Sleeve",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Copper Infused,",
+      "Copper infused fiber",
+      "Helps relieve soreness",
+      "1 Support",
+      "Fits left or Right Ankle"
+    ],
+    "image": "assets/Ankle_Products/875585.jpg",
+    "sizes": ["M/L"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "M/L": {"low": 4.0, "high": 5.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "107266",
+    "name": "Walgreens Ankle Sleeve",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Variable compression",
+      "Moderate support",
+      "1 Sleeve",
+      "One Size",
+      "Fits left or Right Ankle"
+    ],
+    "image": "assets/Ankle_Products/107266_1.jpg",
+    "sizes": ["S/M-L/XL"],
+    "number_of_sizes": 2,
+    "size_ranges": {
+      "S/M": {"low": 3.5, "high": 4.5},
+      "L/XL": {"low": 4.5, "high": 5.5}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "973078",
+    "name": "Walgreens Ankle Sleeve",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Compression",
+      "Moderate support.",
+      "1 Sleeve",
+      "One Size",
+      "Fits left or Right Ankle"
+    ],
+    "image": "assets/Ankle_Products/973078.jpg",
+    "sizes": ["M/L"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "M/L": {"low": 4.0, "high": 5.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "742794",
+    "name": "Walgreens Ankle Sleeve",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Great for sensitive skin",
+      "Moderate support",
+      "1 Brace",
+      "One Size",
+      "Fits left or Right Ankle"
+    ],
+    "image": "assets/Ankle_Products/742794.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.5, "high": 5.5}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "888468",
+    "name": "Walgreens Ankle Stabilizer",
+    "product_type": "Ankle",
+    "obsolete": false,
+    "desc": [
+      "Maximum support",
+      "Adjustable",
+      "1 Ankle support",
+      "One Size",
+      "Fits left or Right Ankle"
+    ],
+    "image": "assets/Ankle_Products/888468.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.5, "high": 5.5}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+
+  {
+    "id": "453866",
+    "name": "Copper Compression Sleeve ELBOW",
+    "product_type": "Elbow",
+    "obsolete": false,
+    "desc": [
+      "COPPER-INFUSED FIBER",
+      "For athletic & everyday wear",
+      "Help relieve soreness",
+      "Odor-resistant fabric wicks away moisture",
+      "1 LARGE SLEEVE"
+    ],
+    "image": "assets/Elbow_Products/453866.jpg",
+    "sizes": ["L"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "L": {"low": 4.50, "high": 5.25}
+    },
+    "Retail": "CVS",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "870210",
+    "name": "Elbow Support",
+    "product_type": "Elbow",
+    "obsolete": false,
+    "desc": [
+      "Adjustable compression",
+      "Adjustable support",
+      "One size fits most",
+      "1 SUPPORT",
+      "Fits left or Right Elbow"
+    ],
+    "image": "assets/Elbow_Products/870210.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.0, "high": 6.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "107279",
+    "name": "Elbow Sleeve",
+    "product_type": "Elbow",
+    "obsolete": false,
+    "desc": [
+      "Compression",
+      "Moderate support",
+      "Slip on design",
+      "1 Elbow sleeve",
+      "Fits left or Right Elbow"
+    ],
+    "image": "assets/Elbow_Products/107279_1.jpg",
+    "sizes": ["S/M-L/XL"],
+    "number_of_sizes": 2,
+    "size_ranges": {
+      "S/M": {"low": 3.0, "high": 4.50},
+      "L/XL": {"low": 4.50, "high": 6.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "444936",
+    "name": "Elbow support",
+    "product_type": "Elbow",
+    "obsolete": false,
+    "desc": [
+      "Moderate support",
+      "Adjustable",
+      "1 Elbow support",
+      "One Size",
+      "Fits left or Right Elbow"
+    ],
+    "image": "assets/Elbow_Products/444936.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.0, "high": 6.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "973079",
+    "name": "Elbow Sleeve",
+    "product_type": "Elbow",
+    "obsolete": false,
+    "desc": [
+      "Compression",
+      "Moderate support",
+      "For athletic & everyday wear",
+      "1 Elbow sleeve",
+      "Fits left or Right Elbow"
+    ],
+    "image": "assets/Elbow_Products/973079.jpg",
+    "sizes": ["M/L"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "M/L": {"low": 3.75, "high": 5.25}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "742799",
+    "name": "Elbow brace",
+    "product_type": "Elbow",
+    "obsolete": false,
+    "desc": [
+      "Great for sensitive skin",
+      "Moderate Support",
+      "One Size",
+      "Fits left or Right Elbow"
+    ],
+    "image": "assets/Elbow_Products/742799.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 3.0, "high": 6.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+
+  {
+    "id": "875300",
+    "name": "Wrist Support",
+    "product_type": "Wrist",
+    "obsolete": false,
+    "desc": [
+      "Moderate Support",
+      "Elastic loop for ease of use",
+      "1 Support",
+      "One Size",
+      "Fits left or Right Wrist"
+    ],
+    "image": "assets/Wrist_Products/875300.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 2.0, "high": 5.0}
+    },
+    "Retail": "Walmart",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  },
+  {
+    "id": "808080",
+    "name": "Wrist Brace",
+    "product_type": "Wrist",
+    "obsolete": false,
+    "desc": [
+      "Great for sensitive skin",
+      "Moderate support",
+      "1 Support brace",
+      "One Size",
+      "Fits Left or Right wrist"
+    ],
+    "image": "assets/Wrist_Products/808080.jpg",
+    "sizes": ["OneSize"],
+    "number_of_sizes": 1,
+    "size_ranges": {
+      "OneSize": {"low": 2.0, "high": 5.0}
+    },
+    "Retail": "Walgreens",
+    "rating": 3.8,
+    "offset": 0.0,
+    "tolerance": 0.0
+  }
+
+]
+
+

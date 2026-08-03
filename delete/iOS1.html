@@ -1,0 +1,51 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>iOS WebAR — World Points</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    #hud {
+      position: fixed; top: 1rem; left: 1rem;
+      background: rgba(0,0,0,.55); color: #fff;
+      padding: .5rem .8rem; border-radius: .5rem;
+      font-size: 14px; z-index: 99999; max-width: 90vw; pointer-events: none;
+    }
+    #start {
+      position: fixed; bottom: 1rem; right: 1rem;
+      padding: .6rem .9rem; border-radius: .5rem;
+      background: #22c55e; color: #053015; border: 1px solid #0d5c23;
+      font-weight: 600; font-size: 15px; z-index: 99998;
+    }
+    #xr8-canvas {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      display: block; z-index: 0; max-width: 100%; max-height: 100%; background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">Tap **Start** — world points will appear as cyan dots</div>
+  <button id="start">Start</button>
+
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+
+  <!-- Self-hosted 8th Wall engine (world effects → SLAM / hit tests) -->
+  <!-- Make sure /xr8/xr.js, /xr8/xr-slam.js, and /xr8/resources/* exist -->
+  <script src="/xr8/xr.js" data-preload-chunks="slam"></script> <!-- [1](https://github.com/WebXR-iOS/webxr-polyfill-ios) -->
+
+  <!-- XR Extras (optional; recommended for full-window canvas sizing) -->
+  <script src="https://cdn.8thwall.com/web/xrextras/xrextras.js"></script> <!-- [2](https://www.kodeco.com/books/apple-augmented-reality-by-tutorials/v1.0/chapters/2-ar-quick-look) -->
+
+  <!-- World Points code -->
+  <script src="/js/ios.js?v=worldpoints"></script>
+</body>
+</html>
+

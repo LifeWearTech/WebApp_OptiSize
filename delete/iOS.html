@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>iOS WebAR Measurement</title>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* HUD */
+    #hud {
+      position: fixed;
+      top: calc(1rem + env(safe-area-inset-top));
+      left: 1rem;
+      max-width: 90vw;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* XR8 canvas */
+    #xr8-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: #000;
+      z-index: 0;
+    }
+
+    /* Start AR (iOS required user gesture) */
+    #start {
+      position: fixed;
+      bottom: calc(2.5rem + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 1rem 1.6rem;
+      font-size: 18px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #00c896, #009f75);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      z-index: 1001;
+      cursor: pointer;
+    }
+
+    /* AR action buttons (match Android) */
+    #ar-action-row {
+      position: fixed;
+      bottom: calc(2.5rem + env(safe-area-inset-bottom));
+      left: calc(1rem + env(safe-area-inset-left));
+      right: calc(1rem + env(safe-area-inset-right));
+      display: flex;
+      gap: 0.75rem;
+      max-width: 520px;
+      margin: 0 auto;
+      z-index: 1001;
+    }
+
+    #exit-ar-btn,
+    #exit-ar-hard-btn {
+      flex: 1 1 0;
+      padding: 0.9rem 0.5rem;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 12px;
+      display: none; /* shown after AR starts */
+      white-space: nowrap;
+    }
+
+    #exit-ar-btn {
+      background: linear-gradient(135deg, #00c896, #009f75);
+      color: #fff;
+      border: none;
+    }
+
+    #exit-ar-hard-btn {
+      background: #444;
+      color: #fff;
+      border: 1px solid #888;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="hud">Engine loading…</div>
+  <canvas id="xr8-canvas"></canvas>
+
+  <!-- iOS-required start button -->
+  <button id="start">Start AR</button>
+
+  <!-- Same buttons as Android -->
+  <div id="ar-action-row">
+    <button id="exit-ar-btn">Product Recommendation</button>
+    <button id="exit-ar-hard-btn">Exit AR</button>
+  </div>
+
+  <!-- Libraries (classic scripts only) -->
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="/xr8/xr.js" data-preload-chunks="slam"></script>
+  <script src="https://cdn.8thwall.com/web/xrextras/xrextras.js"></script>
+
+  <!-- Shared logic (classic globals) -->
+  <script src="/js/hud.js"></script>
+
+  <!-- ✅ ORIGINAL iOS AR LOGIC (extended safely) -->
+  <script src="/js/iOS/iOS.js"></script>
+
+</body>
+</html>
+

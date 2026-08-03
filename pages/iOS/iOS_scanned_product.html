@@ -1,0 +1,343 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Scanned Product</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <style>
+    /* ===============================
+       ✅ BASE
+    =============================== */
+    body {
+      background: #111;
+      color: white;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    main {
+      padding-bottom: 6.5rem;
+    }
+
+    /* ===============================
+       ✅ HEADER (BACK + TITLE)
+    =============================== */
+    .scan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+  
+/* ✅ HOME BUTTON */
+#back-btn {
+  font-size: 28px;
+  color: #4ea3ff;
+  cursor: pointer;
+}
+
+
+    /* ✅ TITLE */
+    .scan-header h2 {
+      margin: 0;
+      flex: 1;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    /* ===============================
+       ✅ PRODUCT CARD
+    =============================== */
+    .product-card {
+      background: linear-gradient(135deg, #f5f5f5, #dcdcdc);
+      border-radius: 15px;
+      border: 2px solid #000;
+      padding: 14px;
+      margin-bottom: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      color: #000;
+      cursor: pointer;
+    }
+
+    /* ✅ SELECTED TILE */
+    .selected-tile {
+      outline: 3px solid lime;
+    }
+
+    .product-image {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .product-title {
+      font-size: 18px;
+      font-weight: bold;
+      font-style: italic;
+      margin-bottom: 6px;
+    }
+
+    .product-desc-line {
+      font-size: 16px;
+      margin: 3px 0;
+    }
+
+    .product-section-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .product-size-line,
+    .product-vendor {
+      font-size: 16px;
+      margin: 3px 0;
+    }
+
+    /* ===============================
+       ✅ ACTION BAR
+    =============================== */
+    .action-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 1rem;
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      background: rgba(17, 17, 17, 0.95);
+    }
+
+    .action-btn {
+      flex: 1;
+      max-width: 220px;
+      padding: 1rem;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 14px;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* ✅ CONTINUE STATES */
+    #continue-btn {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    #continue-btn.enabled {
+      background: linear-gradient(135deg, #00c896, #009f75);
+      cursor: pointer;
+    }
+
+    /* ✅ RESCAN BUTTON */
+    #rescan-btn {
+      background: linear-gradient(135deg, #ff8c42, #e0671f);
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- ===============================
+     ✅ HEADER (RESTORED)
+=============================== -->
+
+<div class="scan-header">
+  <div></div>
+
+  <h2>Scanned Product</h2>
+
+  <div id="back-btn">
+    <span class="material-icons">home</span>
+  </div>
+</div>
+
+
+<main>
+  <div id="products-container"></div>
+</main>
+
+<!-- ===============================
+     ✅ ACTION BUTTONS
+=============================== -->
+<div class="action-bar">
+  <button id="rescan-btn" class="action-btn">Rescan</button>
+  <button id="continue-btn" class="action-btn">Continue</button>
+</div>
+
+<script>
+  /* ===============================
+     ✅ READ BARCODE FROM URL
+  =============================== */
+  const params = new URLSearchParams(window.location.search);
+  const rawBarcode = params.get("barcode");
+
+  const container = document.getElementById("products-container");
+  const continueBtn = document.getElementById("continue-btn");
+  const rescanBtn = document.getElementById("rescan-btn");
+
+  let selectedProduct = null;
+  let continueInProgress = false;
+
+  /* ===============================
+     ✅ BACK BUTTON
+  =============================== */
+  document.getElementById("back-btn").onclick = function () {
+    window.location.href = "/main_iOS.html";
+  };
+
+  /* ===============================
+     ✅ NORMALIZE BARCODE
+  =============================== */
+  function normalizeBarcode(code) {
+    let digits = String(code || "").replace(/[^0-9]/g, "");
+    if (digits.length === 13 && digits.startsWith("0")) {
+      digits = digits.substring(1);
+    }
+    return digits;
+  }
+
+  /* ===============================
+     ✅ LOAD PRODUCT
+  =============================== */
+  if (rawBarcode !== null) {
+    loadProduct(rawBarcode);
+  } else {
+    container.textContent = "No barcode provided.";
+  }
+
+
+
+
+  async function loadProduct(barcode) {
+    try {
+      const scanned = normalizeBarcode(barcode);
+
+      
+const response = await fetch("/assets/ProductData/ProductsJsonFile.json");
+
+if (!response.ok) {
+  throw new Error(
+    `Failed to load products (${response.status})`
+  );
+}
+
+const products = await response.json();
+
+
+      let found = products.find(
+        p => !p.obsolete && normalizeBarcode(p.id) === scanned
+      );
+
+      if (!found) {
+        container.textContent = "Product not found.";
+        return;
+      }
+
+      renderProduct(found);
+
+    } catch (e) {
+      console.error(e);
+      container.textContent = "Failed to load product.";
+    }
+  }
+
+  /* ===============================
+     ✅ RENDER PRODUCT
+  =============================== */
+  function renderProduct(p) {
+
+    const card = document.createElement("div");
+    card.className = "product-card";
+
+    card.innerHTML = `
+          <img
+      class="product-image"
+      src="/${p.image}"
+      alt="${p.name}"
+    />
+      <div class="product-title">${p.name}</div>
+
+    
+    ${Array.isArray(p.desc)
+    ? p.desc.map(d =>
+      `<div class="product-desc-line">• ${d}</div>`
+    ).join("")
+     : ""}
+
+
+      
+    ${Array.isArray(p.sizes)
+    ? p.sizes.map(s =>
+      `<div class="product-size-line">• ${s}</div>`
+    ).join("")
+    : ""}
+
+
+      <div class="product-vendor">
+        <strong>Retail:</strong> ${p.Retail}
+      </div>
+    `;
+
+    /* ✅ CLICK: manual selection */
+    card.onclick = function () {
+      document.querySelectorAll(".product-card")
+        .forEach(c => c.classList.remove("selected-tile"));
+
+      card.classList.add("selected-tile");
+      selectedProduct = p;
+      continueBtn.classList.add("enabled");
+    };
+
+    container.appendChild(card);
+
+    /* ✅ AUTO-SELECT (YOUR REQUIREMENT) */
+    selectedProduct = p;
+    card.classList.add("selected-tile");
+    continueBtn.classList.add("enabled");
+  }
+
+  /* ===============================
+     ✅ CONTINUE BUTTON
+  =============================== */
+   
+continueBtn.onclick = function () {
+
+  if (continueInProgress) return;
+
+  if (!selectedProduct) return;
+
+  continueInProgress = true;
+
+  window.location.href =
+    "/pages/iOS/iOS_instructions.html" +
+    "?p=" + encodeURIComponent(selectedProduct.product_type) +
+    "&prod=" + encodeURIComponent(selectedProduct.id);
+};
+
+
+  /* ===============================
+     ✅ RESCAN BUTTON
+  =============================== */
+  rescanBtn.onclick = function () {
+    window.location.href = "/pages/iOS/iOS_scan.html";
+  };
+
+</script>
+
+</body>
+</html>

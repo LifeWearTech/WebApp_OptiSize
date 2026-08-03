@@ -1,0 +1,271 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scan Barcode</title>
+
+<style>
+
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden; /* Prevent scrolling */
+}
+
+/* CAMERA */
+video {
+  position: fixed;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover; /* Fill entire screen */
+}
+
+/* BACK BUTTON */
+#back {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+
+  z-index: 10;
+}
+
+/* SCAN GUIDE */
+#guide {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 80vw;
+  max-width: 420px;
+  height: 22vh;
+
+  border: 3px solid red;
+  border-radius: 10px;
+
+  box-shadow:
+    0 0 0 9999px rgba(0,0,0,0.5),
+    0 0 10px red;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="back">← Back</div>
+
+<video id="video" autoplay playsinline></video>
+<div id="guide"></div>
+
+<script>
+
+/* ==================================================
+   GLOBAL VARIABLES
+================================================== */
+
+let stream = null;
+let detector = null;
+let scanning = false;
+
+const video = document.getElementById("video");
+
+/* ==================================================
+   20 SECOND INACTIVITY TIMER
+   If no barcode is scanned within 20 seconds,
+   close camera and return to main screen.
+================================================== */
+
+let timeoutId = null;
+
+function resetTimeout() {
+
+  clearTimeout(timeoutId);
+
+  timeoutId = setTimeout(() => {
+
+    console.log("Scanner timed out");
+
+    stopScanner();
+
+    window.location.href =
+      "/main_Android.html";
+
+  }, 20000); // 20 seconds
+}
+
+/* ==================================================
+   START SCANNER
+================================================== */
+
+async function startScanner() {
+
+  try {
+
+    /* Create barcode detector */
+    detector = new BarcodeDetector({
+      formats: ["ean_13", "upc_a", "code_128"]
+    });
+
+    /* Open rear camera */
+    stream = await navigator.mediaDevices.getUserMedia({
+        
+video: {
+  facingMode: "environment",
+  width: { ideal: 1280 },
+  height: { ideal: 720 }
+}
+
+    });
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    /*
+      Give autofocus a short moment
+      to stabilize before scanning.
+      This improves read reliability.
+    */
+    await new Promise(resolve =>
+      setTimeout(resolve, 500)
+    );
+
+    scanning = true;
+
+    /* Start inactivity timer */
+    resetTimeout();
+
+    /* Begin scan loop */
+    requestAnimationFrame(scanLoop);
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert(
+      "Camera not available or permission denied"
+    );
+  }
+}
+
+/* ==================================================
+   STOP SCANNER
+================================================== */
+
+function stopScanner() {
+
+  scanning = false;
+
+  clearTimeout(timeoutId);
+
+  if (stream) {
+
+    stream.getTracks().forEach(track =>
+      track.stop()
+    );
+
+    stream = null;
+  }
+
+  video.srcObject = null;
+}
+
+/* ==================================================
+   SCAN LOOP
+================================================== */
+
+async function scanLoop() {
+
+  if (!scanning) return;
+
+  let codes = [];
+
+  try {
+
+    /*
+      Detect barcodes in current camera frame.
+      If detector throws an error,
+      scanning continues rather than failing.
+    */
+    codes = await detector.detect(video);
+
+  } catch (err) {
+
+    console.error(
+      "Barcode detection error:",
+      err
+    );
+  }
+
+  /* Barcode found */
+  if (codes.length > 0) {
+
+    const barcode =
+      codes[0]?.rawValue?.trim();
+
+    /* Ignore empty results */
+    if (barcode) {
+
+      console.log(
+        "Barcode detected:",
+        barcode
+      );
+
+      stopScanner();
+
+      window.location.href =
+        "/pages/Android/Android_scanned_product.html?barcode=" +
+        encodeURIComponent(barcode);
+
+      return;
+    }
+  }
+
+  /* Continue scanning */
+  requestAnimationFrame(scanLoop);
+}
+
+/* ==================================================
+   BACK BUTTON
+================================================== */
+
+document.getElementById("back").onclick =
+function () {
+
+  stopScanner();
+
+  history.back();
+};
+
+/* ==================================================
+   PAGE CLEANUP
+   Ensures camera is released if user
+   leaves page unexpectedly.
+================================================== */
+
+window.addEventListener(
+  "beforeunload",
+  stopScanner
+);
+
+/* ==================================================
+   START APPLICATION
+================================================== */
+
+startScanner();
+
+</script>
+
+</body>
+</html>

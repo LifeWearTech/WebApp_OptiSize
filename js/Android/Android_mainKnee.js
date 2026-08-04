@@ -10,7 +10,7 @@ import {
   createRulerCanvas,
   removeRulerCanvas,
   drawRulerOverlay
-} from './Android_overlay-knee.js';
+} from './Android_overlay-Knee.js';
 
 window.__MAIN_LOADED__ = true;
 window.__MAIN_VERSION__ = "1.0.2-mainKnee";

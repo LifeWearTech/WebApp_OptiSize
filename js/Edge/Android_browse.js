@@ -144,7 +144,7 @@ async function loadProducts() {
 const homeBtn = document.createElement("a");
 
 homeBtn.href =
-  "/main_Android.html";
+  "/main_Edge.html";
 homeBtn.innerHTML ='<span class="material-icons">home</span>';
 
 homeBtn.style.position = "fixed";
@@ -173,7 +173,7 @@ continueBtn.onclick = () => {
 
   
 window.location.href =
-  `/pages/Android/Android_instructions.html` +
+  `/pages/Edge/Android_instructions.html` +
   `?p=${encodeURIComponent(type)}` +
   `&prod=${encodeURIComponent(productId)}` +
   `&retailer=${encodeURIComponent(selectedRetailer)}`;

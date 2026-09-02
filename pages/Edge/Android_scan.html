@@ -99,7 +99,7 @@ function resetTimeout() {
     stopScanner();
 
     window.location.href =
-      "/main_Android.html";
+      "/main_Edge.html";
 
   }, 20000); // 20 seconds
 }
@@ -225,7 +225,7 @@ async function scanLoop() {
       stopScanner();
 
       window.location.href =
-        "/pages/Android/Android_scanned_product.html?barcode=" +
+        "/pages/Edge/Android_scanned_product.html?barcode=" +
         encodeURIComponent(barcode);
 
       return;

@@ -63,7 +63,7 @@ video {
 
 </style>
 
-<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="/libs/zxing.min.js"></script>
 
 </head>
 
@@ -202,8 +202,6 @@ async function startScanner() {
 
   try {
 
-
-        
    if (!window.ZXing) {
   throw new Error("ZXing library failed to load.");
    }

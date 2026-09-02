@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -25,20 +24,47 @@
         return isIOS && isSafari;
       }
 
-      // ✅ Redirect immediately
+      const ua = navigator.userAgent;
+
+      // iPhone/iPad Safari
       if (isIOSSafari()) {
         window.location.replace("/main_iOS.html");
-      } else {
-        // ✅ Android + everything else goes here
-        window.location.replace("/main_Android.html");
+        return;
       }
+
+      // Android browsers
+      const isAndroid = /Android/i.test(ua);
+
+      if (isAndroid) {
+        if (ua.includes("SamsungBrowser")) {
+          window.location.replace("/main_SamsungInternet.html");
+        }
+        else if (ua.includes("EdgA")) {
+          window.location.replace("/main_Edge.html");
+        }
+else if (ua.includes("Chrome")) {
+  window.location.replace("/main_Chrome.html");
+}
+        else {
+          document.addEventListener("DOMContentLoaded", () => {
+            document.body.innerHTML =
+              '<p style="text-align:center;color:red;margin-top:20%;font-family:sans-serif;">Browser not supported</p>';
+          });
+        }
+        return;
+      }
+
+      // Anything not iOS Safari or Android
+      document.addEventListener("DOMContentLoaded", () => {
+        document.body.innerHTML =
+          '<p style="text-align:center;color:red;margin-top:20%;font-family:sans-serif;">Browser not supported</p>';
+      });
 
     })();
   </script>
 </head>
 
 <body>
-  <!-- Optional fallback message -->
   <p style="text-align:center; color:#999; margin-top:20%;">
     Redirecting to experience...
   </p>

@@ -95,7 +95,7 @@ wrapper.style.marginTop = "60px";
 const homeBtn = document.createElement("a");
 
 homeBtn.href =
-  "/main_Android.html";
+  "/main_Chrome.html";
 
 homeBtn.innerHTML =
   '<span class="material-icons">home</span>';
@@ -331,7 +331,7 @@ measureBtn.onclick = async () => {
 
     const arModule =
       await import(
-        `/js/Android/Android_${MODULE_MAP[type]}`
+        `/js/Chrome/Android_${MODULE_MAP[type]}`
       );
 
     document.getElementById(
@@ -353,7 +353,7 @@ measureBtn.onclick = async () => {
       if (selectedProductId) {
 
         window.location.href =
-          `/pages/Android/Android_results.html` +
+          `/pages/Chrome/Android_results.html` +
           `?width=${encodeURIComponent(measuredWidth)}` +
           `&type=${encodeURIComponent(type)}` +
           `&prod=${encodeURIComponent(selectedProductId)}`;
@@ -362,7 +362,7 @@ measureBtn.onclick = async () => {
       }
 
       window.location.href =
-        `/pages/Android/Android_Select_Retailer.html` +
+        `/pages/Chrome/Android_Select_Retailer.html` +
         `?type=${encodeURIComponent(type)}` +
         `&width=${encodeURIComponent(measuredWidth)}`;
     };

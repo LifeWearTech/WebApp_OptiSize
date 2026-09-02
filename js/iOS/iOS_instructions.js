@@ -6,23 +6,36 @@
 const params = new URLSearchParams(window.location.search);
 const type = params.get("p") || "Knee";
 
+
 /* --------------------------------------------------------
    Instructions Data
 -------------------------------------------------------- */
 
 const INSTRUCTIONS = {
+
   Knee: {
-    image: "/assets/Instructions/KneeInstructions.png",
+    image: "/assets/Instructions/KneeInstructions.jpg",
     bullets: [
       "Position your knee clearly in the frame.",
       "Make sure lighting is even and glare-free.",
       "Stand still for accurate measurement.",
-      "Align your knee with the curved ruler overlay."
+      "Align your knee with the ruler."
+    ]
+  },
+
+  Ankle: {
+    image: "/assets/Instructions/AnkleInstructions.jpg",
+    bullets: [
+      "Center your ankle in the frame.",
+      "Ensure a clean background behind your foot.",
+      "Hold your phone steady.",
+      "Follow the on-screen measurement guide."
     ]
   }
+
 };
 
-const instructionSet = INSTRUCTIONS[type];
+const instructionSet =INSTRUCTIONS[type] ||INSTRUCTIONS.Knee;
 
 /* --------------------------------------------------------
    Render Instructions
@@ -35,14 +48,38 @@ const card = document.createElement("div");
 card.className = "instruction-card";
 
 
+/* --------------------------------------------------------
+   IMAGE
+-------------------------------------------------------- */
+
+const img = document.createElement("img");
+
+img.loading = "eager";
+img.decoding = "async";
+
+img.src = instructionSet.image;
+
+img.alt =  `${type} measurement instructions`;
+
+card.appendChild(img);
+
+/* --------------------------------------------------------
+   BULLETS
+-------------------------------------------------------- */
 
 instructionSet.bullets.forEach(text => {
+
   const p = document.createElement("p");
+
   p.textContent = `• ${text}`;
+
   card.appendChild(p);
+
 });
 
 container.appendChild(card);
+
+
 
 /* --------------------------------------------------------
    Single Start Button ONLY

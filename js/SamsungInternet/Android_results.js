@@ -219,7 +219,7 @@ function renderSeeRecommendationsButton(products, selectedProduct) {
     }
 
     window.location.href =
-      `/pages/Android/Android_results.html` +
+      `/pages/SamsungInternet/Android_results.html` +
       `?width=${measuredWidth}` +
       `&type=${type}` +
       `&retailer=${encodeURIComponent(effectiveRetailer)}`;
@@ -236,7 +236,7 @@ function renderSeeRecommendationsButton(products, selectedProduct) {
 const homeBtn = document.createElement("a");
 
 homeBtn.href =
-  "/main_Android.html";
+  "/main_SamsungInternet.html";
 
 homeBtn.innerHTML =
   '<span class="material-icons">home</span>';

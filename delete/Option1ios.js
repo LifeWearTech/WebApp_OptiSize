@@ -16,32 +16,6 @@
   const rightLines = ["Right Edge","of Knee"];
   const ranges = ["[4-5]","[5-6]","[6-7]","[7-8]"];
 
-  let baselineEstablished = false;
-  let baselineCameraYIn = 0;
-  let baselineHeightIn = 0;
-  let integratedShiftIn = 0;
-  let runningDeltaCount = 0;
-  let runningDeltaMean = 0;
-  let runningDeltaM2 = 0;
-  let currentSD = 0;
-  let currentUCL = 0;
-  const MAX_SD = 0.16;
-  const MIN_SD = 0.08; // 0.01 in
-    // ✅ CONFIG
-  const X_START = 0.2;
-  const X_END = 0.8;
-  const X_STEP = 0.02;
-  const Y_START = 0.1;
-  const Y_END = 0.6;
-  const Y_STEP = 0.02;
-  let groundSamples = [];
-  let calibratedHeightIn = null;
-  const GROUND_CALIBRATION_FRAMES = 10;
-  let cameraYBuffer = [];
-  let TILT = {pitchDeg: 0,rollDeg: 0, ready: false};
-  let currentHudMessage = "";
-  let currentHeightIn = null;
-
 
 function clampDistance(d) {
   return Math.min(Math.max(d, LOW_DIST), HIGH_DIST);
@@ -138,7 +112,7 @@ function computeWidthFromHeight(heightIn) {
 }
 
 function createRulerCanvas() {
-  if (canvas) return;
+
   canvas = document.createElement("canvas");
   canvas.id = "ruler-canvas";
 
@@ -180,11 +154,6 @@ function removeRulerCanvas() {
     canvas.remove();
     canvas = null;
   }
-  window.removeEventListener(
-  "resize",
-  resizeCanvas
-);
-
 }
 
 function resizeCanvas() {
@@ -526,14 +495,6 @@ function drawRulerOverlay(widthIn, tiltDeg) {
     }
   }
 
-  function showOnce(msg) {
-  if (msg === currentHudMessage) {
-    return;
-  }
-  currentHudMessage = msg;
-  show(msg);
-}
-
   function generateRange(start, end, step) {
     const arr = [];
     for (let v = start; v <= end + 1e-6; v += step) {
@@ -542,31 +503,34 @@ function drawRulerOverlay(widthIn, tiltDeg) {
     return arr;
   }
 
-  function stopAR() {
-    try {
-      removeRulerCanvas();
-      XR8.stop();
+function stopAR() {
+  try {
+    removeRulerCanvas();
+    XR8.stop();
 
-    } catch (e) {
-      console.error(e);
-    }
-    
-    baselineEstablished = false;
-    integratedShiftIn = 0;
-    runningDeltaCount = 0;
-    runningDeltaMean = 0;
-    runningDeltaM2 = 0;
-    cameraYBuffer = [];
-    groundSamples = [];
-    baselineCameraYIn = 0;
-    calibratedHeightIn = null;
-    currentHudMessage = "";
-    currentSD = 0;
-    currentUCL = 0;
+  } catch (e) {
+    console.error(e);
   }
+}
 
 
+  // ✅ CONFIG
+  const X_START = 0.2;
+  const X_END = 0.8;
+  const X_STEP = 0.01;
+  const Y_START = 0.1;
+  const Y_END = 0.6;
+  const Y_STEP = 0.01;
 
+
+let groundSamples = [];
+let calibratedHeightIn = null;
+const GROUND_CALIBRATION_FRAMES = 10;
+let calibratedCameraY = null;
+let cameraYSamples = [];
+let cameraYBuffer = [];
+const MA_WINDOW = 30;
+let TILT = {pitchDeg: 0,rollDeg: 0, ready: false};
 
 window.addEventListener(
   "deviceorientation",
@@ -587,15 +551,213 @@ window.addEventListener(
 );
 
 
-function updateRecommendationButton(enabled) {
-  const btn = document.getElementById("exit-ar-btn");
-  if (!btn) return;
-  btn.disabled = !enabled;
-  btn.style.opacity = enabled ? "1.0" : "0.5";
-  btn.style.pointerEvents = enabled ? "auto" : "none";
+function drawBufferGraph(buffer) {
+
+  if (!ctx || !canvas || buffer.length < 2) {
+    return;
+  }
+
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  const graphX = 20;
+  const graphY = 20;
+  const graphW = 300;
+  const graphH = 150;
+
+  const minVal = Math.min(...buffer);
+  const maxVal = Math.max(...buffer);
+
+  const range =
+    Math.max(
+      maxVal - minVal,
+      0.000001
+    );
+
+  // Background
+  ctx.fillStyle =
+    "rgba(0,0,0,0.75)";
+  ctx.fillRect(
+    graphX,
+    graphY,
+    graphW,
+    graphH
+  );
+
+  // Border
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(
+    graphX,
+    graphY,
+    graphW,
+    graphH
+  );
+
+  // -------------------------
+  // Y Axis Grid / Labels
+  // -------------------------
+
+  const numTicks = 5;
+
+  ctx.font =
+    "11px sans-serif";
+
+  ctx.fillStyle =
+    "#FFFFFF";
+
+  ctx.strokeStyle =
+    "rgba(255,255,255,0.2)";
+
+  ctx.lineWidth = 1;
+
+  for (
+    let i = 0;
+    i <= numTicks;
+    i++
+  ) {
+
+    const value =
+      minVal +
+      ((maxVal - minVal) *
+       (numTicks - i)) /
+      numTicks;
+
+    const y =
+      graphY +
+      (graphH * i) /
+      numTicks;
+
+    // grid line
+    ctx.beginPath();
+    ctx.moveTo(graphX, y);
+    ctx.lineTo(
+      graphX + graphW,
+      y
+    );
+    ctx.stroke();
+
+    // label
+    ctx.fillText(
+      value.toFixed(2),
+      graphX - 40,
+      y + 4
+    );
+  }
+
+  // -------------------------
+  // Plot Line
+  // -------------------------
+
+  ctx.strokeStyle =
+    "#00FF00";
+
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+
+  buffer.forEach(
+    (value, i) => {
+
+      const x =
+        graphX +
+        (i / (buffer.length - 1)) *
+        graphW;
+
+      const y =
+        graphY +
+        graphH -
+        ((value - minVal) /
+          range) *
+        graphH;
+
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+  );
+
+  ctx.stroke();
+
+  // -------------------------
+  // Draw Dots
+  // -------------------------
+
+  ctx.fillStyle =
+    "#FFEB3B";
+
+  buffer.forEach(
+    (value, i) => {
+
+      const x =
+        graphX +
+        (i / (buffer.length - 1)) *
+        graphW;
+
+      const y =
+        graphY +
+        graphH -
+        ((value - minVal) /
+          range) *
+        graphH;
+
+      ctx.beginPath();
+      ctx.arc(
+        x,
+        y,
+        3,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+  );
+
+  // -------------------------
+  // Stats
+  // -------------------------
+
+  ctx.fillStyle =
+    "#FFFFFF";
+
+  ctx.font =
+    "12px sans-serif";
+
+  ctx.fillText(
+    `Min: ${minVal.toFixed(2)}`,
+    graphX,
+    graphY + graphH + 18
+  );
+
+  ctx.fillText(
+    `Max: ${maxVal.toFixed(2)}`,
+    graphX + 120,
+    graphY + graphH + 18
+  );
+
+  ctx.fillText(
+    `Range: ${(maxVal - minVal).toFixed(2)}`,
+    graphX + 220,
+    graphY + graphH + 18
+  );
+
+  ctx.restore();
 }
 
 
+let baselineEstablished = false;
+let baselineHeightIn = 0;
+let baselineCameraYIn = 0;
+let integratedShiftIn = 0;
+let runningDeltaCount = 0;
+let runningDeltaMean = 0;
+let runningDeltaM2 = 0;
+let currentSD = 0;
+let currentUCL = 0;
+let currentLCL = 0;
+const MIN_SD = 0.083; // 0.01 in
 
 window.wireXR = function () {
 
@@ -604,8 +766,8 @@ window.wireXR = function () {
 
 XR8.XrController.configure({
   enableWorldPoints: true,
-  enableLighting: false,
-  scale: 'responsive'
+  enableLighting: true,
+  scale: 'absolute'
 });
 
   XR8.addCameraPipelineModules([
@@ -616,32 +778,51 @@ XR8.XrController.configure({
  
     {
       name: "median-height-debug",
+
       onStart: function () {
+
         this.lastUpdate = 0;
-        this.xs = generateRange(X_START,X_END,X_STEP);
-        this.ys = generateRange(Y_START,Y_END, Y_STEP);
+
+        this.xs = generateRange(
+          X_START,
+          X_END,
+          X_STEP
+        );
+
+        this.ys = generateRange(
+          Y_START,
+          Y_END,
+          Y_STEP
+        );
+
         this.xLen = this.xs.length;
         this.yLen = this.ys.length;
-        this.totalPoints = this.xLen * this.yLen;
+
+        this.totalPoints =
+          this.xLen * this.yLen;
+
         createRulerCanvas();
       },
 
 onUpdate: function () {
   const { camera } =
   XR8.Threejs.xrScene();
-  const cameraY =camera.position.y;
 
+const cameraY =camera.position.y;
+
+const cameraDeltaIn =(camera.position.y)*M_TO_IN ;
+  const now = Date.now();
+
+  // Throttle only during calibration
+ // =====================================
+// TRACKING MODE
+// =====================================
 if (calibratedHeightIn !== null) {
+
   cameraYBuffer.push(cameraY);
+
   if (cameraYBuffer.length > 30) {cameraYBuffer.shift();}
-  let updatedHeightIn = calibratedHeightIn;
-    if (!baselineEstablished && cameraYBuffer.length < 30) {
-      showOnce(
-        "Finalizing Measurement...\n" +
-        "Hold Phone Still and Flat\n" +
-        `Stability Samples: ${cameraYBuffer.length}/30`
-      );
-    }
+
   if (cameraYBuffer.length >= 30) {
     if (!baselineEstablished) {
       const cameraYInBuffer = cameraYBuffer.map(y => y * M_TO_IN);
@@ -650,13 +831,20 @@ if (calibratedHeightIn !== null) {
       for (let i = 1; i < cameraYInBuffer.length; i++) {
         baselineDeltas.push(cameraYInBuffer[i] - cameraYInBuffer[i - 1]);
       }
-    const maxAbsDelta = Math.max(...baselineDeltas.map(d => Math.abs(d)));
+      // Check maximum frame-to-frame movement
+      const maxAbsDelta = Math.max(...baselineDeltas.map(d => Math.abs(d)));
+      // Reject calibration if phone moved
     if (maxAbsDelta > 0.25 || rangeIn > 0.5) {
+      // Drop oldest sample and keep searching
+      // for a stable 30-frame window.
          cameraYBuffer.shift();
-    showOnce(
-      "Stabilizing Measurement...\n" +
-      "Keep your phone still and flat."
-    );
+      show(
+    `Calibrating...\n` +
+    `Hold phone still\n` +
+    `Max Delta: ${maxAbsDelta.toFixed(3)} in\n` +
+    `Range: ${rangeIn.toFixed(3)} in\n` +
+    `Stable Samples: ${cameraYBuffer.length}/30`
+  );
   return;
 }
 
@@ -671,74 +859,82 @@ if (calibratedHeightIn !== null) {
         const diff = d - runningDeltaMean;
         runningDeltaM2 += diff * diff;
       }
-      currentSD = Math.min(Math.max(Math.sqrt(runningDeltaM2 /Math.max(runningDeltaCount - 1,1)),MIN_SD), MAX_SD);
+      currentSD = Math.max(Math.sqrt(runningDeltaM2 / Math.max(runningDeltaCount - 1, 1)),MIN_SD);
       currentUCL = 3*currentSD;
+      currentLCL = -3*currentSD;   
       baselineEstablished = true;
     }
 
+    // ====================================
+    // PROCESS NEWEST DELTA
+    // ====================================
+
+// ====================================
+// PROCESS NEWEST DELTA
+// ====================================
+// ====================================
+// PROCESS NEWEST DELTA
+// ====================================
+
 const current = cameraYBuffer[cameraYBuffer.length - 1];
 const prev1 = cameraYBuffer[cameraYBuffer.length - 2];
+const prev2 = cameraYBuffer[cameraYBuffer.length - 3];
+
+const cameraYIn = current * M_TO_IN;
+
 const deltaIn = (current - prev1) * M_TO_IN;
+const delta1In = (prev1 - prev2) * M_TO_IN;
 
-const effectiveDelta = Math.abs(deltaIn) < (currentSD/2) ? 0 : deltaIn;
+// 2-frame smoothing
+const avgDeltaIn = (deltaIn + delta1In) / 2;
 
-if (Math.abs(effectiveDelta) <= currentUCL) {
-  const MAX_SHIFT_IN = 15.0;
-  integratedShiftIn += effectiveDelta;
-  integratedShiftIn = Math.max(-MAX_SHIFT_IN,Math.min(MAX_SHIFT_IN, integratedShiftIn));
+// Hard reject for actual phone movement
+const MAX_FRAME_DELTA_IN = 0.5;
+
+let accepted = false;
+
+if (
+  Math.abs(deltaIn) <= MAX_FRAME_DELTA_IN &&
+  Math.abs(delta1In) <= MAX_FRAME_DELTA_IN &&
+  Math.abs(avgDeltaIn) <= currentUCL
+) {
+
+  accepted = true;
+
+  // Integrate accepted shift
+  integratedShiftIn += avgDeltaIn;
+
+  // Update running statistics using SAME signal
   runningDeltaCount++;
-  const d1 = deltaIn - runningDeltaMean;
+  const d1 = avgDeltaIn - runningDeltaMean;
   runningDeltaMean += d1 / runningDeltaCount;
-  const d2 = deltaIn - runningDeltaMean;
+  const d2 = avgDeltaIn - runningDeltaMean;
   runningDeltaM2 += d1 * d2;
-  currentSD = Math.min(Math.max(Math.sqrt(runningDeltaM2 /Math.max(runningDeltaCount - 1,1)),MIN_SD), MAX_SD);
+  currentSD = Math.max(Math.sqrt(runningDeltaM2 /Math.max(runningDeltaCount - 1, 1)),MIN_SD);
   currentUCL = 3 * currentSD;
- }
+  currentLCL = -3 * currentSD;
+}
 
- const displayShiftIn =  Math.ceil(integratedShiftIn * 10) / 10;
+const updatedHeightIn = baselineHeightIn + integratedShiftIn;
 
-  updatedHeightIn =  baselineHeightIn + displayShiftIn;
-  //updatedHeightIn = baselineHeightIn + integratedShiftIn;
-  currentHeightIn = updatedHeightIn;
-  if (!Number.isFinite(updatedHeightIn)) {return;}
+show(
+  `Camera Y: ${cameraYIn.toFixed(2)} in\n` +
+  `Baseline Y: ${baselineCameraYIn.toFixed(2)} in\n\n` +
+  `Delta(n): ${deltaIn.toFixed(4)} in\n` +
+  `Delta(n-1): ${delta1In.toFixed(4)} in\n` +
+  `Avg Delta: ${avgDeltaIn.toFixed(4)} in\n\n` +
+  `Mean: ${runningDeltaMean.toFixed(4)}\n` +
+  `SD: ${currentSD.toFixed(4)}\n` +
+  `LCL: ${currentLCL.toFixed(4)}\n` +
+  `UCL: ${currentUCL.toFixed(4)}\n\n` +
+  `Accepted: ${accepted}\n` +
+  `Integrated Shift: ${integratedShiftIn.toFixed(2)} in\n` +
+  `Height: ${updatedHeightIn.toFixed(2)} in`
+);
+calibratedHeightIn = updatedHeightIn;
   }
 
-  const widthIn = computeWidthFromHeight(updatedHeightIn);
-  const tiltOk =  TILT.ready &&  Math.abs(TILT.pitchDeg) < 10;
-  drawRulerOverlay(widthIn,TILT.pitchDeg);
-         let heightOk = true;
-          if (updatedHeightIn > 51) {heightOk = false; }
-          else if (updatedHeightIn < 25) {heightOk = false;}
-          if (!heightOk) {
-            if (updatedHeightIn > 51) {
-              showOnce("Phone too high");
-            } else {
-              showOnce("Phone too close to ground");
-            }
-          } else if (!tiltOk) {
-            showOnce(
-            "Adjust Phone Angle\n\n" +
-            "Hold your phone flatter."
-          );
-          } else {
-          showOnce(
-            "1. Position your knee within the guide\n" +
-            "2. Align both knee edges\n" +
-            "3. Tap Product Recommendation"
-          );
-
-          }
-          show(`Integrated Shift: ${integratedShiftIn.toFixed(2)} in\n` );
-
-          const buttonEnabled =
-            baselineEstablished &&
-            heightOk &&
-            tiltOk &&
-            widthIn > 4.0 &&
-            widthIn < 8.0 &&
-            updatedHeightIn < 51 &&
-            updatedHeightIn > 25;
-          updateRecommendationButton(buttonEnabled);
+  const widthIn = computeWidthFromHeight(calibratedHeightIn);
   return;
 }
   // =====================================
@@ -754,41 +950,100 @@ if (Math.abs(effectiveDelta) <= currentUCL) {
 
     const x = xs[xi];
 
-    for (let yi = 0; yi < this.yLen; yi++ ) {
-      const hits =XR8.XrController.hitTest(x,ys[yi],["FEATURE_POINT"]);
-      if (!hits ||  hits.length === 0) continue;
-      const p = hits[0].position;
+    for (
+      let yi = 0;
+      yi < this.yLen;
+      yi++
+    ) {
+
+      const hits =
+        XR8.XrController.hitTest(
+          x,
+          ys[yi],
+          ["FEATURE_POINT"]
+        );
+
+      if (
+        !hits ||
+        hits.length === 0
+      ) continue;
+
+      const p =
+        hits[0].position;
+
       if (!p) continue;
-      if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.z)) continue;
-      if (p.y < 0 || p.y >= cameraY) continue;
-      frameHeightsIn.push((cameraY - p.y) * M_TO_IN );
+
+      if (
+        !isFinite(p.x) ||
+        !isFinite(p.y) ||
+        !isFinite(p.z)
+      ) continue;
+
+      if (
+        p.y < 0 ||
+        p.y >= cameraY
+      ) continue;
+
+      frameHeightsIn.push(
+        (cameraY - p.y) *
+        M_TO_IN
+      );
     }
   }
 
-  const validHeights =frameHeightsIn.filter( h => h >= 20 && h <= 40 );
-  if (validHeights.length > 0) {
-    const avgHeight = validHeights.reduce((a, b) => a + b,0) / validHeights.length;
-    groundSamples.push(avgHeight);
-
-    showOnce(
-      "Preparing Measurement...\n" +
-      "Please slowly move your phone around."
+  const validHeights =
+    frameHeightsIn.filter(
+      h => h >= 20 && h <= 40
     );
-    if (
-      groundSamples.length >= GROUND_CALIBRATION_FRAMES
-    ) {
-      const avgHeightIn =  groundSamples.reduce((a, b) => a + b, 0) / groundSamples.length;
 
-      calibratedHeightIn = Math.min(44,Math.max(36, avgHeightIn));
+  if (validHeights.length > 0) {
+
+    const avgHeight =
+      validHeights.reduce(
+        (a, b) => a + b,
+        0
+      ) / validHeights.length;
+
+    groundSamples.push(avgHeight);
+    cameraYSamples.push(cameraY);
+
+    show(
+      `Calibrating...\n` +
+      `Frames: ${groundSamples.length}/${GROUND_CALIBRATION_FRAMES}\n` +
+      `Height: ${avgHeight.toFixed(2)} in`
+    );
+
+    if (
+      groundSamples.length >=
+      GROUND_CALIBRATION_FRAMES
+    ) {
+
+      calibratedHeightIn =
+        groundSamples.reduce(
+          (a, b) => a + b,
+          0
+        ) / groundSamples.length;
+
+      calibratedCameraY =
+        cameraYSamples.reduce(
+          (a, b) => a + b,
+          0
+        ) / cameraYSamples.length;
+
       cameraYBuffer =[]
+
+
+      lastCameraY =
+        calibratedCameraY;
+
       groundSamples = [];
+      cameraYSamples = [];
     }
 
   } else {
 
-    showOnce(
-      "Preparing Measurement...\n" +
-      "Please point your phone toward the floor."
+    show(
+      "Collecting Samples..."
     );
   }
 }
@@ -806,8 +1061,10 @@ recommendationBtn.onclick = () => {
 
   stopAR();
 
-  const widthIn = computeWidthFromHeight(currentHeightIn);
+  const widthIn = computeWidthFromHeight(calibratedHeightIn);
+
   const params = new URLSearchParams(window.location.search);
+
   const type = params.get("p") || "Knee";
   const productId =params.get("prod") || "";
 

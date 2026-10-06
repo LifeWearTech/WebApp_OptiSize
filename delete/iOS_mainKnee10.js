@@ -48,9 +48,9 @@ let cumulativeShiftIn = 0;
 
 // Delta processing
 const deltaBuffer = [];
-const TRACKING_BUFFER_SIZE = 75;
+const TRACKING_BUFFER_SIZE = 100;
 const STABILITY_SAMPLE_COUNT = 50;
-const STABILITY_RMS_THRESHOLD = 0.025;
+const STABILITY_RMS_THRESHOLD = 0.05;
 
 // Spike verification
 let pendingSpike = null;
@@ -87,8 +87,10 @@ const HUD_COLORS = {
   ERROR: "#C62828"      // red
 };
 
-// Learns drift slowly while stationary
-const DRIFT_BIAS_ALPHA = 0.05;
+let directionConfidence = 0;
+let driftRatio = 0;
+let stationaryReferenceHeightIn = null;
+let stationaryHeightDriftIn = 0;
 
 function clampDistance(d) {
   return Math.min(Math.max(d, LOW_DIST), HIGH_DIST);
@@ -487,84 +489,40 @@ if (calibratedHeightIn !== null) {
   // ====================================================
 
   if (previousCameraYIn === null) {
-
     previousCameraYIn = currentCameraYIn;
-
     if (baselineHeightIn === null) {
       baselineHeightIn = calibratedHeightIn;
     }
-
     return;
   }
 
-  const deltaIn =
-    currentCameraYIn - previousCameraYIn;
+  const deltaIn = currentCameraYIn - previousCameraYIn;
 
   // ====================================================
   // SPIKE VERIFICATION
   // ====================================================
 
   if (pendingSpike !== null) {
-
     verificationBuffer.push(deltaIn);
-
-    if (
-      verificationBuffer.length >=
-      VERIFICATION_FRAMES
-    ) {
-
-      const avgAbsDelta =
-        verificationBuffer.reduce(
-          (sum, value) =>
-            sum + Math.abs(value),
-          0
-        ) / verificationBuffer.length;
-
-      if (
-        avgAbsDelta <
-        STABILITY_THRESHOLD
-      ) {
-
-        const totalMovement =
-          pendingSpike +
-          verificationBuffer.reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          );
-
-        deltaBuffer.push(
-          totalMovement
-        );
-
-        if (
-          deltaBuffer.length >
-          TRACKING_BUFFER_SIZE
-        ) {
+    if (verificationBuffer.length >= VERIFICATION_FRAMES) {
+      const avgAbsDelta =verificationBuffer.reduce((sum, value) => sum + Math.abs(value),0) / verificationBuffer.length;
+      if (avgAbsDelta < STABILITY_THRESHOLD) {
+        const totalMovement = pendingSpike + verificationBuffer.reduce((sum, value) => sum + value, 0);
+        deltaBuffer.push(totalMovement);
+        if (deltaBuffer.length > TRACKING_BUFFER_SIZE) {
           deltaBuffer.shift();
         }
       }
-
       pendingSpike = null;
       verificationBuffer.length = 0;
     }
 
-  } else if (
-    Math.abs(deltaIn) >
-    SPIKE_THRESHOLD
-  ) {
-
+  } else if (Math.abs(deltaIn) > SPIKE_THRESHOLD) {
     pendingSpike = deltaIn;
     verificationBuffer.length = 0;
-
   } else {
-
     deltaBuffer.push(deltaIn);
-
-    if (
-      deltaBuffer.length >
-      TRACKING_BUFFER_SIZE
-    ) {
+    if (deltaBuffer.length > TRACKING_BUFFER_SIZE) {
       deltaBuffer.shift();
     }
   }
@@ -573,55 +531,65 @@ if (calibratedHeightIn !== null) {
   // UPDATE STATS EVERY 10 FRAMES
   // ====================================================
 
-  if (
-    deltaBuffer.length >=
-      STABILITY_SAMPLE_COUNT &&
-    ++statsFrameCounter >= 3
-  ) {
-
+  if (deltaBuffer.length >= STABILITY_SAMPLE_COUNT && ++statsFrameCounter >= 10) {
     statsFrameCounter = 0;
-
     sortBuffer.length = 0;
     sortBuffer.push(...deltaBuffer);
-
     sortBuffer.sort(
-      (a, b) =>
-        Math.abs(a) -
-        Math.abs(b)
+      (a, b) => Math.abs(a) - Math.abs(b)
     );
 
-    const filtered =
-      sortBuffer.slice(
-        10,
-        sortBuffer.length - 10
-      );
-
+    const filtered =sortBuffer.slice(5,sortBuffer.length - 5);
     let sum = 0;
     let sumSq = 0;
-
-    for (
-      let i = 0;
-      i < filtered.length;
-      i++
-    ) {
-
+    for (let i = 0; i < filtered.length; i++) {
       const v = filtered[i];
-
       sum += v;
       sumSq += v * v;
     }
 
     if (filtered.length > 0) {
-
-      filteredDeltaAvg =
-        sum / filtered.length;
-
-      filteredDeltaRms =
-        Math.sqrt(
-          sumSq / filtered.length
-        );
-
+      filteredDeltaAvg = sum / filtered.length;
+      filteredDeltaRms = Math.sqrt(sumSq / filtered.length);
       statsReady = true;
+      // ------------------------------------
+// DRIFT RATIO
+// ------------------------------------
+
+   driftRatio =  Math.abs(filteredDeltaAvg) /  Math.max(filteredDeltaRms, 0.0001);
+
+      // ------------------------------------
+// DIRECTION CONFIDENCE
+// ------------------------------------
+
+      let positiveCount = 0;
+      let negativeCount = 0;
+
+      for (let i = 0; i < filtered.length; i++) {
+        const v = filtered[i];
+
+        if (v > DRIFT_AVG_THRESHOLD) {
+          positiveCount++;
+        } else if (v < -DRIFT_AVG_THRESHOLD) {
+          negativeCount++;
+        }
+      }
+
+      const directionalSamples = positiveCount + negativeCount;
+
+      directionConfidence = directionalSamples > 0 ? Math.max(positiveCount, negativeCount) / directionalSamples : 0;
+
+      // ------------------------------------
+      // DRIFT OBSERVATION ONLY
+      // ------------------------------------
+
+      if (Math.abs(filteredDeltaAvg) > DRIFT_AVG_THRESHOLD && Math.abs(previousFilteredDeltaAvg) >    DRIFT_AVG_THRESHOLD && Math.sign(filteredDeltaAvg) === Math.sign(previousFilteredDeltaAvg)
+      ) {
+        driftDirectionFrames++;
+      } else {
+        driftDirectionFrames = 0;
+      }
+      previousFilteredDeltaAvg = filteredDeltaAvg;
     }
   }
 
@@ -630,64 +598,32 @@ if (calibratedHeightIn !== null) {
   // ====================================================
 
   if (!trackingStable) {
-
-    if (
-      deltaBuffer.length <
-      STABILITY_SAMPLE_COUNT
-    ) {
+    if (deltaBuffer.length < STABILITY_SAMPLE_COUNT ) {
 
       showOnce(
         `Collecting Samples\n${deltaBuffer.length}/${STABILITY_SAMPLE_COUNT}`
       );
-
-      previousCameraYIn =
-        currentCameraYIn;
-
+      previousCameraYIn = currentCameraYIn;
       return;
     }
 
-    if (
-      statsReady &&
-      filteredDeltaRms <
-        STABILITY_RMS_THRESHOLD
-    ) {
-
+    if (statsReady && filteredDeltaRms < STABILITY_RMS_THRESHOLD) {
       trackingStable = true;
-
-      baselineHeightIn =
-        calibratedHeightIn;
-
+      baselineHeightIn = calibratedHeightIn;
       cumulativeShiftIn = 0;
       emaDeltaIn = 0;
-
       showOnce("Hold Still");
-
-      previousCameraYIn =
-        currentCameraYIn;
-
+      previousCameraYIn = currentCameraYIn;
       return;
     }
 
-    const progress =
-      Math.min(
-        100,
-        Math.round(
-          (
-            deltaBuffer.length /
-            STABILITY_SAMPLE_COUNT
-          ) * 100
-        )
-      );
-
+   const progress = Math.min(100,Math.round((deltaBuffer.length / STABILITY_SAMPLE_COUNT) * 100));
     showOnce(
       `🔵 Preparing Measurement\n` +
       `Hold phone steady (${progress}%)`,
       HUD_COLORS.INFO
     );
-
-    previousCameraYIn =
-      currentCameraYIn;
-
+    previousCameraYIn = currentCameraYIn;
     return;
   }
 
@@ -695,80 +631,67 @@ if (calibratedHeightIn !== null) {
   // EMA UPDATE
   // ====================================================
 
-if (statsReady) {
-
-  emaDeltaIn =
-      ALPHA_DIRECTION_CHANGE * filteredDeltaAvg +
-      (1 - ALPHA_DIRECTION_CHANGE) * emaDeltaIn;
-
-  if (
-      filteredDeltaRms < STABILITY_RMS_THRESHOLD &&
-      Math.abs(filteredDeltaAvg) < 0.005
-  ) {
-      emaDeltaIn = 0;
+  if (statsReady) {
+    emaDeltaIn = ALPHA_DIRECTION_CHANGE * filteredDeltaAvg + (1 - ALPHA_DIRECTION_CHANGE) * emaDeltaIn;
   }
+
+  // ====================================================
+  // DRIFT DETECTION
+  // ====================================================
+
+ 
+
+const phoneStationary =  filteredDeltaRms < (STABILITY_RMS_THRESHOLD * 0.5);
+
+if (phoneStationary) {
+
+  if (stationaryReferenceHeightIn === null) {
+    stationaryReferenceHeightIn = currentHeightIn;
+  }
+
+  stationaryHeightDriftIn =
+    Math.abs(currentHeightIn - stationaryReferenceHeightIn);
+
+} else {
+
+  stationaryReferenceHeightIn = currentHeightIn;
+  stationaryHeightDriftIn = 0;
 }
 
-  // ====================================================
-  // SIMPLE DRIFT DETECTION
-  // ====================================================
-
-  const phoneStationary =
-    filteredDeltaRms <
-    STABILITY_RMS_THRESHOLD;
-
-  const suspiciousDrift =
-    phoneStationary &&
-    Math.abs(filteredDeltaAvg) >
-      DRIFT_AVG_THRESHOLD;
+const suspiciousDrift =
+  phoneStationary &&
+  (
+    (
+      driftDirectionFrames >= DRIFT_DIRECTION_THRESHOLD &&
+      directionConfidence > 0.6 &&
+      driftRatio > 0.6
+    ) ||
+    stationaryHeightDriftIn > 0.25
+  );
 
   // ====================================================
   // HEIGHT UPDATE
   // ====================================================
 
-  let appliedDeltaIn =
-    emaDeltaIn;
-
-  if (suspiciousDrift) {
-    appliedDeltaIn *= 0.1;
-  }
-
-const INTEGRATION_DEADBAND = 0.01;
-
-if (Math.abs(appliedDeltaIn) > INTEGRATION_DEADBAND) {
-    cumulativeShiftIn += appliedDeltaIn;
+let appliedDeltaIn = emaDeltaIn;
+if (suspiciousDrift) {
+  appliedDeltaIn *= 0.1;
 }
-
-  const updatedHeightIn =
-    baselineHeightIn +
-    cumulativeShiftIn;
-
-  currentHeightIn =
-    updatedHeightIn;
-
-  previousCameraYIn =
-    currentCameraYIn;
+   cumulativeShiftIn += appliedDeltaIn;
+  const updatedHeightIn = baselineHeightIn +  cumulativeShiftIn;
+  currentHeightIn = updatedHeightIn;
+  previousCameraYIn = currentCameraYIn;
 
   // ====================================================
   // WIDTH UPDATE
   // ====================================================
 
-  if (
-    lastWidthHeightIn === null ||
-    Math.abs(
-      updatedHeightIn -
-      lastWidthHeightIn
-    ) > 0.05
+  if (lastWidthHeightIn === null ||  Math.abs(updatedHeightIn -lastWidthHeightIn) > 0.05
   ) {
+    cachedWidthIn =computeWidthFromHeight(updatedHeightIn);
+    lastWidthHeightIn = updatedHeightIn;
+  }
 
-    cachedWidthIn =
-      computeWidthFromHeight(
-        updatedHeightIn
-      );
-
-    lastWidthHeightIn =
-      updatedHeightIn
-    }
   // ====================================================
   // BUTTON STATE
   // ====================================================
@@ -794,8 +717,8 @@ if (Math.abs(appliedDeltaIn) > INTEGRATION_DEADBAND) {
 } else if (suspiciousDrift) {
 
   showOnce(
-    "⚠️ Stop: Verifying\n" +
-    "Hold phone still",
+    "⚠️ Tracking Needs Verification\n" +
+    "Hold phone near waist height and keep it steady",
     HUD_COLORS.WARNING
   );
 

@@ -153,18 +153,21 @@ function ensureARDom() {
 /* --------------------------------------------------------
    START AR (clean + correct)
 -------------------------------------------------------- */
+/* --------------------------------------------------------
+   START AR (clean + correct)
+-------------------------------------------------------- */
 
 measureBtn.onclick = () => {
 
   ensureARDom();
 
-  // ✅ Hide entire instructions UI
+  // Hide entire instructions UI
   container.style.display = "none";
   measureBtn.style.display = "none";
 
   document.body.style.background = "#000";
 
-  // ✅ Create XR canvas
+  // Create XR canvas
   const canvas = document.createElement("canvas");
   canvas.id = "xr8-canvas";
   document.body.appendChild(canvas);
@@ -177,14 +180,18 @@ measureBtn.onclick = () => {
     }
   }
 
-  // ✅ Ensure pipeline wired BEFORE run
+  // Ensure pipeline wired BEFORE run
   if (window.XR8) {
     window.wireXR();
     startAR();
   } else {
-    window.addEventListener("xrloaded", () => {
-      window.wireXR();
-      startAR();
-    }, { once: true });
+    window.addEventListener(
+      "xrloaded",
+      () => {
+        window.wireXR();
+        startAR();
+      },
+      { once: true }
+    );
   }
 };

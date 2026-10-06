@@ -48,9 +48,9 @@ let cumulativeShiftIn = 0;
 
 // Delta processing
 const deltaBuffer = [];
-const TRACKING_BUFFER_SIZE = 75;
+const TRACKING_BUFFER_SIZE = 100;
 const STABILITY_SAMPLE_COUNT = 50;
-const STABILITY_RMS_THRESHOLD = 0.025;
+const STABILITY_RMS_THRESHOLD = 0.05;
 
 // Spike verification
 let pendingSpike = null;
@@ -87,12 +87,10 @@ const HUD_COLORS = {
   ERROR: "#C62828"      // red
 };
 
-// Learns drift slowly while stationary
-const DRIFT_BIAS_ALPHA = 0.05;
-
-const MOVEMENT_BUFFER_SIZE = 25;
-const cameraYBuffer = [];
-const deltaYBuffer = [];
+let directionConfidence = 0;
+let driftRatio = 0;
+let stationaryReferenceHeightIn = null;
+let stationaryHeightDriftIn = 0;
 
 function clampDistance(d) {
   return Math.min(Math.max(d, LOW_DIST), HIGH_DIST);
@@ -482,11 +480,8 @@ XR8.XrController.configure({
 
 onUpdate: function () {
   const cameraY =xrCamera.position.y;
-  // ====================================================
-  // FIRST SAMPLE
-  // ====================================================
-
 if (calibratedHeightIn !== null) {
+
   const currentCameraYIn = cameraY * M_TO_IN;
 
   // ====================================================
@@ -497,115 +492,206 @@ if (calibratedHeightIn !== null) {
     previousCameraYIn = currentCameraYIn;
     if (baselineHeightIn === null) {
       baselineHeightIn = calibratedHeightIn;
-      currentHeightIn = calibratedHeightIn;
     }
     return;
   }
 
-  // ====================================================
-  // RAW DELTA
-  // ====================================================
-
-  let deltaIn = currentCameraYIn - previousCameraYIn;
-  previousCameraYIn = currentCameraYIn;
-  deltaIn = Math.max(-1.0,Math.min(1.0, deltaIn));
-  cameraYBuffer.push(currentCameraYIn);
-  deltaYBuffer.push(deltaIn);
-  if (cameraYBuffer.length > MOVEMENT_BUFFER_SIZE) {cameraYBuffer.shift();}
-  if (deltaYBuffer.length > MOVEMENT_BUFFER_SIZE) {deltaYBuffer.shift();}
+  const deltaIn = currentCameraYIn - previousCameraYIn;
 
   // ====================================================
-  // STABILIZATION
+  // SPIKE VERIFICATION
+  // ====================================================
+
+  if (pendingSpike !== null) {
+    verificationBuffer.push(deltaIn);
+    if (verificationBuffer.length >= VERIFICATION_FRAMES) {
+      const avgAbsDelta =verificationBuffer.reduce((sum, value) => sum + Math.abs(value),0) / verificationBuffer.length;
+      if (avgAbsDelta < STABILITY_THRESHOLD) {
+        const totalMovement = pendingSpike + verificationBuffer.reduce((sum, value) => sum + value, 0);
+        deltaBuffer.push(totalMovement);
+        if (deltaBuffer.length > TRACKING_BUFFER_SIZE) {
+          deltaBuffer.shift();
+        }
+      }
+      pendingSpike = null;
+      verificationBuffer.length = 0;
+    }
+
+  } else if (Math.abs(deltaIn) > SPIKE_THRESHOLD) {
+    pendingSpike = deltaIn;
+    verificationBuffer.length = 0;
+  } else {
+    deltaBuffer.push(deltaIn);
+    if (deltaBuffer.length > TRACKING_BUFFER_SIZE) {
+      deltaBuffer.shift();
+    }
+  }
+
+  // ====================================================
+  // UPDATE STATS EVERY 10 FRAMES
+  // ====================================================
+
+  if (deltaBuffer.length >= STABILITY_SAMPLE_COUNT && ++statsFrameCounter >= 10) {
+    statsFrameCounter = 0;
+    sortBuffer.length = 0;
+    sortBuffer.push(...deltaBuffer);
+    sortBuffer.sort(
+      (a, b) => Math.abs(a) - Math.abs(b)
+    );
+
+    const filtered =sortBuffer.slice(5,sortBuffer.length - 5);
+    let sum = 0;
+    let sumSq = 0;
+    for (let i = 0; i < filtered.length; i++) {
+      const v = filtered[i];
+      sum += v;
+      sumSq += v * v;
+    }
+
+    if (filtered.length > 0) {
+      filteredDeltaAvg = sum / filtered.length;
+      filteredDeltaRms = Math.sqrt(sumSq / filtered.length);
+      statsReady = true;
+      // ------------------------------------
+// DRIFT RATIO
+// ------------------------------------
+
+   driftRatio =  Math.abs(filteredDeltaAvg) /  Math.max(filteredDeltaRms, 0.0001);
+
+      // ------------------------------------
+// DIRECTION CONFIDENCE
+// ------------------------------------
+
+      let positiveCount = 0;
+      let negativeCount = 0;
+
+      for (let i = 0; i < filtered.length; i++) {
+        const v = filtered[i];
+
+        if (v > DRIFT_AVG_THRESHOLD) {
+          positiveCount++;
+        } else if (v < -DRIFT_AVG_THRESHOLD) {
+          negativeCount++;
+        }
+      }
+
+      const directionalSamples = positiveCount + negativeCount;
+
+      directionConfidence = directionalSamples > 0 ? Math.max(positiveCount, negativeCount) / directionalSamples : 0;
+
+      // ------------------------------------
+      // DRIFT OBSERVATION ONLY
+      // ------------------------------------
+
+      if (Math.abs(filteredDeltaAvg) > DRIFT_AVG_THRESHOLD && Math.abs(previousFilteredDeltaAvg) >    DRIFT_AVG_THRESHOLD && Math.sign(filteredDeltaAvg) === Math.sign(previousFilteredDeltaAvg)
+      ) {
+        driftDirectionFrames++;
+      } else {
+        driftDirectionFrames = 0;
+      }
+      previousFilteredDeltaAvg = filteredDeltaAvg;
+    }
+  }
+
+  // ====================================================
+  // TRACKING STABILIZATION
   // ====================================================
 
   if (!trackingStable) {
+    if (deltaBuffer.length < STABILITY_SAMPLE_COUNT ) {
 
-    const progress = Math.min(
-      100,
-      Math.round(
-        (cameraYBuffer.length / MOVEMENT_BUFFER_SIZE) * 100
-      )
-    );
+      showOnce(
+        `Collecting Samples\n${deltaBuffer.length}/${STABILITY_SAMPLE_COUNT}`
+      );
+      previousCameraYIn = currentCameraYIn;
+      return;
+    }
 
+    if (statsReady && filteredDeltaRms < STABILITY_RMS_THRESHOLD) {
+      trackingStable = true;
+      baselineHeightIn = calibratedHeightIn;
+      cumulativeShiftIn = 0;
+      emaDeltaIn = 0;
+      showOnce("Hold Still");
+      previousCameraYIn = currentCameraYIn;
+      return;
+    }
+
+   const progress = Math.min(100,Math.round((deltaBuffer.length / STABILITY_SAMPLE_COUNT) * 100));
     showOnce(
       `🔵 Preparing Measurement\n` +
       `Hold phone steady (${progress}%)`,
       HUD_COLORS.INFO
     );
-
-    if (
-      cameraYBuffer.length >=
-      MOVEMENT_BUFFER_SIZE
-    ) {
-
-      trackingStable = true;
-
-      baselineHeightIn =
-        calibratedHeightIn;
-
-      currentHeightIn =
-        calibratedHeightIn;
-
-      showOnce("Hold Still");
-    }
-
+    previousCameraYIn = currentCameraYIn;
     return;
   }
 
   // ====================================================
-  // WAIT FOR FULL BUFFER
+  // EMA UPDATE
   // ====================================================
 
-  if (cameraYBuffer.length <MOVEMENT_BUFFER_SIZE) {
-    return;
+  if (statsReady) {
+    emaDeltaIn = ALPHA_DIRECTION_CHANGE * filteredDeltaAvg + (1 - ALPHA_DIRECTION_CHANGE) * emaDeltaIn;
   }
 
   // ====================================================
-  // AVERAGE DELTA MAGNITUDE
+  // DRIFT DETECTION
   // ====================================================
 
-  let avgDeltaIn = 0;
-  for (let i = 0; i < deltaYBuffer.length; i++) {
-    avgDeltaIn += Math.abs(deltaYBuffer[i]);
-  }
-  avgDeltaIn /= deltaYBuffer.length;
+ 
 
-  // ====================================================
-  // CAMERA Y VOTING
-  // Compare against current baseline
-  // ====================================================
+const phoneStationary =  filteredDeltaRms < (STABILITY_RMS_THRESHOLD * 0.5);
 
-  let aboveCount = 0;
-  let belowCount = 0;
+if (phoneStationary) {
 
-  const baselineCameraYIn =cameraYBuffer.reduce((sum, value) => sum + value,0) / cameraYBuffer.length;
-  for (let i = 0; i < cameraYBuffer.length; i++) {
-    const value = cameraYBuffer[i];
-    if (value > baselineCameraYIn) {
-      aboveCount++;
-    } else if (value < baselineCameraYIn) {
-      belowCount++;
-    }
+  if (stationaryReferenceHeightIn === null) {
+    stationaryReferenceHeightIn = currentHeightIn;
   }
 
-  const netDirectionVote =aboveCount - belowCount;
-  const directionStrength = netDirectionVote / MOVEMENT_BUFFER_SIZE;
-  const offsetIn = avgDeltaIn * directionStrength *MOVEMENT_BUFFER_SIZE;
-  const updatedHeightIn = baselineHeightIn + offsetIn;
-  currentHeightIn =updatedHeightIn;
-  baselineHeightIn =updatedHeightIn;
-  cameraYBuffer.length = 0;
-  deltaYBuffer.length = 0;
-  if (
-    lastWidthHeightIn === null ||
-    Math.abs(
-      updatedHeightIn - lastWidthHeightIn
-    ) > 0.05
+  stationaryHeightDriftIn =
+    Math.abs(currentHeightIn - stationaryReferenceHeightIn);
+
+} else {
+
+  stationaryReferenceHeightIn = currentHeightIn;
+  stationaryHeightDriftIn = 0;
+}
+
+const suspiciousDrift =
+  phoneStationary &&
+  (
+    (
+      driftDirectionFrames >= DRIFT_DIRECTION_THRESHOLD &&
+      directionConfidence > 0.6 &&
+      driftRatio > 0.6
+    ) ||
+    stationaryHeightDriftIn > 0.25
+  );
+
+  // ====================================================
+  // HEIGHT UPDATE
+  // ====================================================
+
+let appliedDeltaIn = emaDeltaIn;
+if (suspiciousDrift) {
+  appliedDeltaIn *= 0.1;
+}
+   cumulativeShiftIn += appliedDeltaIn;
+  const updatedHeightIn = baselineHeightIn +  cumulativeShiftIn;
+  currentHeightIn = updatedHeightIn;
+  previousCameraYIn = currentCameraYIn;
+
+  // ====================================================
+  // WIDTH UPDATE
+  // ====================================================
+
+  if (lastWidthHeightIn === null ||  Math.abs(updatedHeightIn -lastWidthHeightIn) > 0.05
   ) {
+    cachedWidthIn =computeWidthFromHeight(updatedHeightIn);
+    lastWidthHeightIn = updatedHeightIn;
+  }
 
-    cachedWidthIn =computeWidthFromHeight( updatedHeightIn );
-    lastWidthHeightIn = updatedHeightIn
-    }
   // ====================================================
   // BUTTON STATE
   // ====================================================
@@ -631,8 +717,8 @@ if (calibratedHeightIn !== null) {
 } else if (suspiciousDrift) {
 
   showOnce(
-    "⚠️ Stop: Verifying\n" +
-    "Hold phone still",
+    "⚠️ Tracking Needs Verification\n" +
+    "Hold phone near waist height and keep it steady",
     HUD_COLORS.WARNING
   );
 

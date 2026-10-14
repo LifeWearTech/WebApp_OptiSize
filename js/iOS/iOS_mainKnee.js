@@ -1,98 +1,105 @@
 (function () {
 
 
-  const exitBtn = document.getElementById("exit-ar-hard-btn");
-  const recommendationBtn = document.getElementById("exit-ar-btn");
+const exitBtn = document.getElementById("exit-ar-hard-btn");
+const recommendationBtn = document.getElementById("exit-ar-btn");
 const M_TO_IN = 39.37;
 
 const LOW_DIST = 25.0;
 const HIGH_DIST = 51.2;
 
-// Overlay
+// ====================================================
+// OVERLAY
+// ====================================================
+
 let canvas, ctx;
-const dpr = Math.min(window.devicePixelRatio || 1,2);
+
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+let screenWidth = window.innerWidth;
+let screenHeight = window.innerHeight;
 
 let leftWidthCached = 0;
 let rightWidthCached = 0;
 
 const leftLines = ["Left Edge", "of Knee"];
 const rightLines = ["Right Edge", "of Knee"];
+
 const ranges = ["[4-5]", "[5-6]", "[6-7]", "[7-8]"];
-const centers = [4.5,5.5,6.675,7.7];
 
-// Calibration
-const X_START = 0.2;
-const X_END = 0.8;
-const X_STEP = 0.02;
+const centers = [
+  4.5,
+  5.5,
+  6.675,
+  7.7
+];
 
-const Y_START = 0.1;
-const Y_END = 0.6;
-const Y_STEP = 0.02;
+// ====================================================
+// ORIENTATION
+// ====================================================
 
-const GROUND_CALIBRATION_FRAMES = 10;
-let groundSamples = [];
-let calibratedHeightIn = null;
+const TILT = {
+  pitchDeg: 0,
+  rollDeg: 0
+};
 
-// Orientation (used for overlay color and button enable/disable)
-const TILT = {pitchDeg: 0,rollDeg: 0};
+// ====================================================
+// TRACKING
+// ====================================================
 
-// UI
-let currentHudMessage = "";
-
-// Tracking
 let trackingStable = false;
 let previousCameraYIn = null;
 let baselineHeightIn = null;
-let currentHeightIn = null;
-let cumulativeShiftIn = 0;
-
-// Delta processing
-const deltaBuffer = [];
-const TRACKING_BUFFER_SIZE = 75;
-const STABILITY_SAMPLE_COUNT = 50;
-const STABILITY_RMS_THRESHOLD = 0.025;
-
-// Spike verification
-let pendingSpike = null;
-let verificationBuffer = [];
-const SPIKE_THRESHOLD = 0.5;
-const STABILITY_THRESHOLD = 0.25;
-const VERIFICATION_FRAMES = 5;
-
-// EMA
-let emaDeltaIn = 0;
-const ALPHA_SAME_DIRECTION = 0.20;
-const ALPHA_DIRECTION_CHANGE = 0.50;
-let statsFrameCounter = 0;
-let filteredDeltaAvg = 0;
-let filteredDeltaRms = 0;
-let recommendationEnabled = false;
-let cachedWidthIn = 6.0;
-let lastDrawnWidth = -1;
-let lastTiltGood = null;
-let screenWidth = window.innerWidth;
-let screenHeight = window.innerHeight;
-const sortBuffer = [];
-let statsReady = false;
-let lastWidthHeightIn = null;
-let driftDirectionFrames = 0;
-let previousFilteredDeltaAvg = 0;
-const DRIFT_AVG_THRESHOLD = 0.01;
-const DRIFT_DIRECTION_THRESHOLD = 50;
-let xrCamera = null;
-const HUD_COLORS = {
-  INFO: "#1565C0",      // blue
-  SUCCESS: "#2E7D32",   // green
-  WARNING: "#EF6C00",   // orange
-  ERROR: "#C62828"      // red
-};
-
-// Learns drift slowly while stationary
-const DRIFT_BIAS_ALPHA = 0.05;
 
 const MOVEMENT_BUFFER_SIZE = 25;
-const cameraYBuffer = [];
+
 const deltaYBuffer = [];
+const rateBuffer = [];
+const smoothedRateBuffer = [];
+let sustainedMotionFrames = 0;
+const SUSTAINED_MOTION_FRAMES = 10;
+const SUSTAINED_RATE_THRESHOLD = 0.02;
+let biasEstimate = 0;
+const BIAS_ALPHA = 0.01;
+let startupCameraYIn = null;
+
+// ====================================================
+// UI
+// ====================================================
+
+let currentHudKey = "";
+
+let recommendationEnabled = false;
+
+let cachedWidthIn = 6.0;
+
+let lastWidthHeightIn = null;
+let lastDrawnWidth = -1;
+let lastTiltGood = null;
+const rawDeltaBuffer = [];
+const smoothedDeltaBuffer = [];
+let lastUpdateTimeMs = null;
+
+let totalOffsetIn = 0;
+
+// ====================================================
+// XR
+// ====================================================
+
+let xrCamera = null;
+
+// ====================================================
+// HUD COLORS
+// ====================================================
+
+const HUD_COLORS = {
+  INFO: "#1565C0",
+  SUCCESS: "#2E7D32",
+  WARNING: "#EF6C00",
+  ERROR: "#C62828"
+};
+
+
 
 function clampDistance(d) {
   return Math.min(Math.max(d, LOW_DIST), HIGH_DIST);
@@ -366,16 +373,7 @@ function drawRulerOverlay(widthIn, tiltDeg) {
     }
   }
 
-/*  function showOnce(msg) {
-  if (msg === currentHudMessage) {
-    return;
-  }
-  currentHudMessage = msg;
-  show(msg);
-}*/
 
-
-let currentHudKey = "";
 
 function showOnce(message,bgColor = "#1E1E1E",textColor = "#FFFFFF") {
 
@@ -389,46 +387,19 @@ function showOnce(message,bgColor = "#1E1E1E",textColor = "#FFFFFF") {
   show(message,bgColor,textColor);
 }
 
-  function generateRange(start, end, step) {
-    const arr = [];
-    for (let v = start; v <= end + 1e-6; v += step) {
-      arr.push(parseFloat(v.toFixed(5)));
-    }
-    return arr;
-  }
-
 function stopAR() {
   try {
     removeRulerCanvas();
+    startupCameraYIn = null;
     XR8.stop();
   } catch (e) {
     console.error(e);
   }
 
-  trackingStable = false;
-  calibratedHeightIn = null;
-  currentHeightIn = null;
-  baselineHeightIn = null;
-  previousCameraYIn = null;
-  cumulativeShiftIn = 0;
-  emaDeltaIn = 0;
-  pendingSpike = null;
-  verificationBuffer = [];
-  deltaBuffer.length = 0;
-  groundSamples.length = 0;
-  currentHudMessage = "";
-  statsReady = false;
-  lastDrawnWidth = -1;
-  lastTiltGood = null;
-  lastWidthHeightIn = null;
-  statsFrameCounter = 0;
-  filteredDeltaAvg = 0;
-  filteredDeltaRms = 0;
-  recommendationEnabled = false;
-  sortBuffer.length = 0;
+
+
   updateRecommendationButton(false);
 }
-
 window.addEventListener(
   "deviceorientation",
   (e) => {
@@ -469,282 +440,231 @@ XR8.XrController.configure({
     {
       name: "median-height-debug",
       onStart: function () {
-        this.frameHeightsIn = [];
-        this.lastUpdate = 0;
-        this.xs = generateRange(X_START,X_END,X_STEP);
-        this.ys = generateRange(Y_START,Y_END, Y_STEP);
-        this.xLen = this.xs.length;
-        this.yLen = this.ys.length;
-        this.totalPoints = this.xLen * this.yLen;
         xrCamera = XR8.Threejs.xrScene().camera;
         createRulerCanvas();
       },
 
 onUpdate: function () {
-  const cameraY =xrCamera.position.y;
-  // ====================================================
-  // FIRST SAMPLE
-  // ====================================================
 
-if (calibratedHeightIn !== null) {
+  if (!xrCamera) {return;}
+
+  const cameraY = xrCamera.position.y;
+  if (!Number.isFinite(cameraY)) {return;}
   const currentCameraYIn = cameraY * M_TO_IN;
+  if (!Number.isFinite(currentCameraYIn)) {return;}
 
-  // ====================================================
-  // FIRST SAMPLE
-  // ====================================================
+  // --------------------------------------------------
+  // INITIALIZATION
+  // --------------------------------------------------
 
-  if (previousCameraYIn === null) {
+  if (startupCameraYIn === null) {
+    startupCameraYIn = currentCameraYIn;
     previousCameraYIn = currentCameraYIn;
-    if (baselineHeightIn === null) {
-      baselineHeightIn = calibratedHeightIn;
-      currentHeightIn = calibratedHeightIn;
-    }
+    lastUpdateTimeMs = performance.now();
+    baselineHeightIn = 38;
     return;
   }
 
-  // ====================================================
-  // RAW DELTA
-  // ====================================================
-
-  let deltaIn = currentCameraYIn - previousCameraYIn;
-  previousCameraYIn = currentCameraYIn;
-  deltaIn = Math.max(-1.0,Math.min(1.0, deltaIn));
-  cameraYBuffer.push(currentCameraYIn);
-  deltaYBuffer.push(deltaIn);
-  if (cameraYBuffer.length > MOVEMENT_BUFFER_SIZE) {cameraYBuffer.shift();}
-  if (deltaYBuffer.length > MOVEMENT_BUFFER_SIZE) {deltaYBuffer.shift();}
-
-  // ====================================================
-  // STABILIZATION
-  // ====================================================
+  // --------------------------------------------------
+  // STARTUP STABILIZATION
+  // --------------------------------------------------
 
   if (!trackingStable) {
-
-    const progress = Math.min(
-      100,
-      Math.round(
-        (cameraYBuffer.length / MOVEMENT_BUFFER_SIZE) * 100
-      )
+    deltaYBuffer.push(currentCameraYIn);
+    if (deltaYBuffer.length > MOVEMENT_BUFFER_SIZE) {
+      deltaYBuffer.shift();
+    }
+    const progress = Math.min(100, Math.round((deltaYBuffer.length /MOVEMENT_BUFFER_SIZE) * 100)
     );
 
     showOnce(
-      `🔵 Preparing Measurement\n` +
-      `Hold phone steady (${progress}%)`,
+      `🔵 Preparing Measurement\nHold phone steady (${progress}%)`,
       HUD_COLORS.INFO
     );
 
-    if (
-      cameraYBuffer.length >=
-      MOVEMENT_BUFFER_SIZE
-    ) {
-
+    if (deltaYBuffer.length >= MOVEMENT_BUFFER_SIZE) {
       trackingStable = true;
-
-      baselineHeightIn =
-        calibratedHeightIn;
-
-      currentHeightIn =
-        calibratedHeightIn;
-
-      showOnce("Hold Still");
+      startupCameraYIn = currentCameraYIn;
+      previousCameraYIn = currentCameraYIn;
+      lastUpdateTimeMs = performance.now();
+      rawDeltaBuffer.length = 0;
+      smoothedDeltaBuffer.length = 0;
+      totalOffsetIn = 0;
+      baselineHeightIn = 38;
+      showOnce(
+        "✅ Ready To Measure",
+        HUD_COLORS.SUCCESS
+      );
     }
 
     return;
   }
 
-  // ====================================================
-  // WAIT FOR FULL BUFFER
-  // ====================================================
+  // --------------------------------------------------
+  // DELTA TIME
+  // --------------------------------------------------
 
-  if (cameraYBuffer.length <MOVEMENT_BUFFER_SIZE) {
-    return;
+  const nowMs = performance.now();
+  let dt =  (nowMs - lastUpdateTimeMs) / 1000;
+  lastUpdateTimeMs = nowMs;
+  if (!Number.isFinite(dt) ||  dt <= 0 || dt > 0.25 ) {
+    dt = 1 / 60;
   }
 
-  // ====================================================
-  // AVERAGE DELTA MAGNITUDE
-  // ====================================================
+  // --------------------------------------------------
+  // POSITION DELTA
+  // --------------------------------------------------
 
-  let avgDeltaIn = 0;
-  for (let i = 0; i < deltaYBuffer.length; i++) {
-    avgDeltaIn += Math.abs(deltaYBuffer[i]);
+  let deltaY = currentCameraYIn - previousCameraYIn;
+  previousCameraYIn = currentCameraYIn;
+
+  // Reject tracking spikes
+
+  if (Math.abs(deltaY) > 0.3 || Math.abs(deltaY)<.005) {return;}
+  // Convert to inches/sec
+  const deltaRate = deltaY / dt;
+
+  // --------------------------------------------------
+  // RAW BUFFER
+  // --------------------------------------------------
+
+  rawDeltaBuffer.push(deltaRate);
+
+  if (rawDeltaBuffer.length > 20) {rawDeltaBuffer.shift();}
+
+  let avgRate = 0;
+  for (let i = 0; i < rawDeltaBuffer.length; i++) {
+    avgRate += rawDeltaBuffer[i];
   }
-  avgDeltaIn /= deltaYBuffer.length;
+  avgRate /= rawDeltaBuffer.length;
 
-  // ====================================================
-  // CAMERA Y VOTING
-  // Compare against current baseline
-  // ====================================================
+  // --------------------------------------------------
+  // SMOOTHED BUFFER
+  // --------------------------------------------------
 
-  let aboveCount = 0;
-  let belowCount = 0;
+  smoothedDeltaBuffer.push(avgRate);
 
-  const baselineCameraYIn =cameraYBuffer.reduce((sum, value) => sum + value,0) / cameraYBuffer.length;
-  for (let i = 0; i < cameraYBuffer.length; i++) {
-    const value = cameraYBuffer[i];
-    if (value > baselineCameraYIn) {
-      aboveCount++;
-    } else if (value < baselineCameraYIn) {
-      belowCount++;
-    }
-  }
-
-  const netDirectionVote =aboveCount - belowCount;
-  const directionStrength = netDirectionVote / MOVEMENT_BUFFER_SIZE;
-  const offsetIn = avgDeltaIn * directionStrength *MOVEMENT_BUFFER_SIZE;
-  const updatedHeightIn = baselineHeightIn + offsetIn;
-  currentHeightIn =updatedHeightIn;
-  baselineHeightIn =updatedHeightIn;
-  cameraYBuffer.length = 0;
-  deltaYBuffer.length = 0;
-  if (
-    lastWidthHeightIn === null ||
-    Math.abs(
-      updatedHeightIn - lastWidthHeightIn
-    ) > 0.05
-  ) {
-
-    cachedWidthIn =computeWidthFromHeight( updatedHeightIn );
-    lastWidthHeightIn = updatedHeightIn
-    }
-  // ====================================================
-  // BUTTON STATE
-  // ====================================================
-  const tiltGood = Math.abs(TILT.pitchDeg) <= 10;
-  const shouldEnable = trackingStable && tiltGood && currentHeightIn !== null;
-  if (shouldEnable !== recommendationEnabled) {
-    recommendationEnabled = shouldEnable;
-    updateRecommendationButton(shouldEnable);
+  if (smoothedDeltaBuffer.length > 25) {
+    smoothedDeltaBuffer.shift();
   }
 
-  // ====================================================
-  // HUD MESSAGE PRIORITY
-  // ====================================================
+  let smoothedRate = 0;
+  for (let i = 0; i < smoothedDeltaBuffer.length; i++) {
+    smoothedRate += smoothedDeltaBuffer[i];
+  }
+  smoothedRate /= smoothedDeltaBuffer.length;
 
- if (!tiltGood) {
+  // --------------------------------------------------
+  // DEADBAND
+  // --------------------------------------------------
 
-  showOnce(
-    "⚠️ Phone Tilted\n" +
-    "Hold Flat until the ruler turns green",
-    HUD_COLORS.ERROR
-  );
+ // if (Math.abs(smoothedRate) < 0.01) {smoothedRate = 0;}
 
-} else if (suspiciousDrift) {
+  let minValue = Infinity;
+  let maxValue = -Infinity;
 
-  showOnce(
-    "⚠️ Stop: Verifying\n" +
-    "Hold phone still",
-    HUD_COLORS.WARNING
-  );
+  for (let i = 0; i < smoothedDeltaBuffer.length; i++) {
+  const v = smoothedDeltaBuffer[i];
+  if (v < minValue) {
+    minValue = v;
+  }
+  if (v > maxValue) {
+    maxValue = v;
+  }
+ }
 
-} else if (currentHeightIn > 51) {
+const signalRange =  maxValue - minValue;
+const recent =  smoothedDeltaBuffer.slice(-10);
+const allPositive =  recent.every(v => v > 0);
+const allNegative =  recent.every(v => v < 0);
+const consistentDirection =  allPositive || allNegative;
+const phoneMoving =  signalRange > 0.5 &&  consistentDirection;
 
-  showOnce(
-    "⚠️ Phone Too High\n" +
-    "Move the phone closer to your knee",
-    HUD_COLORS.WARNING
-  );
+  // --------------------------------------------------
+  // FRAME-RATE-INDEPENDENT INTEGRATION
+  // --------------------------------------------------
 
-} else if (currentHeightIn < 25) {
-
-  showOnce(
-    "⚠️ Phone Too Low\n" +
-    "Raise the phone slightly",
-    HUD_COLORS.WARNING
-  );
-
-} else {
-
-  showOnce(
-    "✅ Ready to Measure\n" +
-    "Align the ruler with the left and right edges of your knee\n" +
-    "Then tap Product Recommendation",
-    HUD_COLORS.SUCCESS
-  );
-
+if (phoneMoving) {
+  totalOffsetIn += smoothedRate * dt;
+  baselineHeightIn = 38 + totalOffsetIn;
 }
 
-  // ====================================================
-  // REDRAW OVERLAY ONLY WHEN NEEDED
-  // ====================================================
-  const widthChanged =  Math.abs(cachedWidthIn - lastDrawnWidth) > 0.1;
-  const tiltChanged =  tiltGood !== lastTiltGood;
+
+  baselineHeightIn = Math.max(LOW_DIST,Math.min(HIGH_DIST,baselineHeightIn));
+  // --------------------------------------------------
+  // WIDTH UPDATE
+  // --------------------------------------------------
+
+
+    cachedWidthIn =computeWidthFromHeight(baselineHeightIn);
+    lastWidthHeightIn = baselineHeightIn;
+
+
+  // --------------------------------------------------
+  // UI STATE
+  // --------------------------------------------------
+
+  const tiltGood = Math.abs(TILT.pitchDeg) <= 10;
+  const shouldEnable =trackingStable && tiltGood;
+  if (shouldEnable !== recommendationEnabled) {
+    recommendationEnabled = shouldEnable;
+    updateRecommendationButton(shouldEnable );
+  }
+
+  // --------------------------------------------------
+  // STATUS
+  // --------------------------------------------------
+
+  if (!tiltGood) {
+
+    showOnce(
+      "⚠️ Phone Tilted\nHold Flat until the ruler turns green",
+      HUD_COLORS.ERROR
+    );
+
+  } else if (
+    baselineHeightIn > HIGH_DIST
+  ) {
+
+    showOnce(
+      "⚠️ Phone Too High\nMove the phone closer to your knee",
+      HUD_COLORS.WARNING
+    );
+
+  } else if (
+    baselineHeightIn < LOW_DIST
+  ) {
+
+    showOnce(
+      "⚠️ Phone Too Low\nRaise the phone slightly",
+      HUD_COLORS.WARNING
+    );
+
+  } else {
+
+    showOnce(
+      "✅ Ready to Measure\n" +
+      `Height: ${baselineHeightIn.toFixed(1)} in\n` +
+      `Offset: ${totalOffsetIn.toFixed(2)} in\n` +
+      `Rate: ${smoothedRate.toFixed(3)} in/s\n` +
+      "Align the ruler with the left and right edges of your knee\n" +
+      "Then tap Product Recommendation",
+      HUD_COLORS.SUCCESS
+    );
+  }
+
+  // --------------------------------------------------
+  // DRAW
+  // --------------------------------------------------
+
+  const widthChanged =Math.abs(cachedWidthIn - lastDrawnWidth) > 0.1;
+  const tiltChanged = tiltGood !==  lastTiltGood;
 
   if (widthChanged || tiltChanged) {
     drawRulerOverlay(cachedWidthIn,TILT.pitchDeg);
-    lastDrawnWidth = cachedWidthIn;
-    lastTiltGood = tiltGood;
+    lastDrawnWidth =  cachedWidthIn;
+    lastTiltGood =  tiltGood;
   }
-  return;
-}
-
- // =====================================
-// CALIBRATION MODE
-// =====================================
-
-const xs = this.xs;
-const ys = this.ys;
-
-this.frameHeightsIn.length = 0;
-const frameHeightsIn = this.frameHeightsIn;
-
-for (let xi = 0; xi < this.xLen; xi++) {
-  const x = xs[xi];
-  for (let yi = 0; yi < this.yLen; yi++) {
-
-    const hits = XR8.XrController.hitTest(x,ys[yi],["FEATURE_POINT"]);
-    if (!hits || hits.length === 0) continue;
-    const p = hits[0].position;
-    if (!p) continue;
-    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.z)) continue;
-    if (p.y < 0 || p.y >= cameraY) continue;
-    frameHeightsIn.push((cameraY - p.y) * M_TO_IN);
-  }
-}
-
-let heightSum = 0;
-let heightCount = 0;
-
-for (let i = 0; i < frameHeightsIn.length; i++) {
-  const h = frameHeightsIn[i];
-  if (h >= 20 && h <= 40) {
-    heightSum += h;
-    heightCount++;
-  }
-}
-if (heightCount > 0) {
-
-  const avgHeight = heightSum / heightCount;
-  groundSamples.push(avgHeight);
-
-  showOnce(
-    `🔵 Preparing Measurement\n` +
-    `Detecting floor (${groundSamples.length}/${GROUND_CALIBRATION_FRAMES})\n` +
-    `Slowly move your phone`,
-    HUD_COLORS.INFO
-  );
-
-  if (groundSamples.length >= GROUND_CALIBRATION_FRAMES) {
-
-    const avgHeightIn =
-      groundSamples.reduce((a, b) => a + b, 0) /
-      groundSamples.length;
-
-    calibratedHeightIn =
-      Math.min(44, Math.max(36, avgHeightIn));
-
-    groundSamples = [];
-  }
-
-} else {
-
-  showOnce(
-    "🟠 Floor Not Detected\n" +
-    "Point the camera toward the floor",
-    HUD_COLORS.WARNING
-  );
-
-}
-
 }
     }
   ]);

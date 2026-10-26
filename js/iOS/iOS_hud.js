@@ -1,26 +1,23 @@
+const hud = document.getElementById("hud");
 
-export const HUD = (() => {
-  const hud = document.getElementById("hud");
+hud.style.position = "fixed";
+hud.style.top = "80px";
+hud.style.left = "50%";
+hud.style.transform = "translateX(-50%)";
 
-  return {
+hud.style.maxWidth = "90%";
+hud.style.padding = "14px 18px";
 
-show(msg) {
-  hud.style.display = "block";
-  hud.innerHTML = msg;
-},
+hud.style.borderRadius = "14px";
 
-    log(msg) {
-      const line = document.createElement("div");
-      line.className = "line";
-      line.textContent = msg;
-      hud.appendChild(line);
-    },
-    error(msg) {
-      const line = document.createElement("div");
-      line.className = "line";
-      line.style.color = "#ff7676";
-      line.textContent = "✖ " + msg;
-      hud.appendChild(line);
-    }
-  };
-})();
+hud.style.background = "rgba(0,0,0,0.75)";
+hud.style.color = "#fff";
+
+hud.style.textAlign = "center";
+
+hud.style.fontSize = "16px";
+hud.style.fontWeight = "600";
+
+hud.style.zIndex = "99999";
+
+hud.style.pointerEvents = "none";

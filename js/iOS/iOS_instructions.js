@@ -93,24 +93,6 @@ const measureBtn = document.getElementById("measure-btn");
 
 function ensureARDom() {
 
-  // ✅ HUD
-  if (!document.getElementById("hud")) {
-    const hud = document.createElement("div");
-    hud.id = "hud";
-    hud.textContent = "Starting AR…";
-
-    hud.style.position = "fixed";
-    hud.style.top = "20px";
-    hud.style.left = "20px";
-    hud.style.zIndex = "10000";
-    hud.style.padding = "8px 12px";
-    hud.style.background = "rgba(0,0,0,0.6)";
-    hud.style.color = "#fff";
-    hud.style.borderRadius = "8px";
-
-    document.body.appendChild(hud);
-  }
-
   // ✅ Action row (hidden until AR starts)
   if (!document.getElementById("ar-action-row")) {
     const row = document.createElement("div");
@@ -150,16 +132,68 @@ function ensureARDom() {
   }
 }
 
-/* --------------------------------------------------------
-   START AR (clean + correct)
--------------------------------------------------------- */
-/* --------------------------------------------------------
-   START AR (clean + correct)
--------------------------------------------------------- */
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
 
-measureBtn.onclick = () => {
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+
+    document.head.appendChild(script);
+  });
+}
+/* --------------------------------------------------------
+   START AR (clean + correct)
+-------------------------------------------------------- */
+measureBtn.onclick = async () => {
 
   ensureARDom();
+
+  // Load Knee Model
+  if (!window.KneeModel) {
+    try {await loadScript("/js/iOS/iOS_Model_Knee.js");
+    } catch (e) {return;}
+  }
+  if (!window.KneeOverlay) {
+    try {await loadScript("/js/iOS/iOS_Overlay_Knee.js");
+    } catch (e) {return;}
+}
+  if (!window.KneeTilt) {
+    try {await loadScript("/js/iOS/iOS_Tilt_Knee.js");
+    } catch (e) {return;}
+}
+
+  if (!window.KneeCalButton) {
+    try {await loadScript("/js/iOS/iOS_CalibrationButton_Knee.js");
+    } catch (e) {return;}
+}
+
+  if (!window.KneeToast) {
+    try {await loadScript("/js/iOS/iOS_Toast_Knee.js");
+    } catch (e) {return;}
+}
+  // Request iOS motion permission
+  if (
+    typeof DeviceOrientationEvent !== "undefined" &&
+    typeof DeviceOrientationEvent.requestPermission === "function"
+  ) {
+
+    try {
+
+      const permission =
+        await DeviceOrientationEvent.requestPermission();
+
+      if (permission !== "granted") {
+        alert("Motion access is required.");
+        return;
+      }
+
+    } catch (e) {
+      console.error("Motion permission denied:", e);
+      return;
+    }
+  }
 
   // Hide entire instructions UI
   container.style.display = "none";
@@ -167,31 +201,39 @@ measureBtn.onclick = () => {
 
   document.body.style.background = "#000";
 
-  // Create XR canvas
-  const canvas = document.createElement("canvas");
-  canvas.id = "xr8-canvas";
-  document.body.appendChild(canvas);
+  window.xrCanvas = document.createElement("canvas");
+  window.xrCanvas.id = "xr8-canvas";
+  document.body.appendChild(window.xrCanvas);
 
-  function startAR() {
+  window.startAR = function () {
     try {
-      XR8.run({ canvas });
+      XR8.run({
+        canvas: window.xrCanvas,
+        xrConfig: {
+          referenceSpaceType: "local-floor"
+        }
+      });
     } catch (e) {
       console.error("XR start failed:", e);
     }
-  }
+  };
 
-  // Ensure pipeline wired BEFORE run
   if (window.XR8) {
+
     window.wireXR();
-    startAR();
+    window.startAR();
+
   } else {
+
     window.addEventListener(
       "xrloaded",
       () => {
         window.wireXR();
-        startAR();
+        window.startAR();
       },
       { once: true }
     );
+
   }
+
 };

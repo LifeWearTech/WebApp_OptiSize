@@ -57,13 +57,10 @@ async function loadProducts() {
       const filtered = products.filter(p => {
         if (p.obsolete) return false;
 
-        const matchesType =
-         p.product_type.toLowerCase() === selectedType.toLowerCase();
-
+        const matchesType = (p.product_type || "").toLowerCase() === selectedType.toLowerCase();
         const matchesRetailer =
          selectedRetailer === "All" ||
          (p.Retail && p.Retail === selectedRetailer);
-
         return matchesType && matchesRetailer;
 });
 
@@ -77,7 +74,6 @@ async function loadProducts() {
     filtered.forEach(product => {
       const card = document.createElement("div");
       card.className = "product-card";
-
       card.innerHTML = `
         <img
           class="product-image"
@@ -86,49 +82,39 @@ async function loadProducts() {
         />
 
         <div class="product-title">${product.name}</div>
-
-        ${product.desc.map(d =>
-          `<div class="product-desc-line">• ${d}</div>`
-        ).join("")}
+        ${Array.isArray(product.desc)
+          ? product.desc.map(d =>
+              `<div class="product-desc-line">• ${d}</div>`
+            ).join("")
+          : ""}
 
         <div class="product-section-title">Sizes</div>
-        ${product.sizes.map(s =>
-          `<div class="product-size-line">• ${s}</div>`
-        ).join("")}
-
+        ${Array.isArray(product.sizes)
+          ? product.sizes.map(s =>
+              `<div class="product-size-line">• ${s}</div>`
+            ).join("")
+          : ""}
         <div class="product-vendor"><strong>Retail:</strong> ${product.Retail}</div>
       `;
-
       // Handle product selection
       card.addEventListener("click", () => {
         selectedProduct = product;
-
-        document
-          .querySelectorAll(".product-card")
+        document.querySelectorAll(".product-card")
           .forEach(c => c.classList.remove("selected"));
-
         card.classList.add("selected");
         actionRow.style.display = "flex";
       });
-
       container.appendChild(card);
     });
 
-    
-    /* ----------------------------------------------------
+        /* ----------------------------------------------------
        Auto-select first product
        Makes Back/Continue visible immediately
     ---------------------------------------------------- */
-
-    const firstCard =
-      container.querySelector(".product-card");
-
+    const firstCard = container.querySelector(".product-card");
     if (firstCard) {
-
       firstCard.classList.add("selected");
-
       selectedProduct = filtered[0];
-
       actionRow.style.display = "flex";
     }
 
@@ -142,20 +128,9 @@ async function loadProducts() {
 
 
 const homeBtn = document.createElement("a");
-
-homeBtn.href =
-  "/main_iOS.html";
-homeBtn.innerHTML ='<span class="material-icons">home</span>';
-
-homeBtn.style.position = "fixed";
-homeBtn.style.top = "16px";
-homeBtn.style.right = "16px";
-
-homeBtn.style.color = "#2563eb";
-homeBtn.style.textDecoration = "none";
-
-homeBtn.style.zIndex = "1000";
-
+homeBtn.href = "/main_iOS.html";
+homeBtn.textContent = "🏠";
+homeBtn.className = "home-btn";
 document.body.appendChild(homeBtn);
 
 // Load products immediately on page load

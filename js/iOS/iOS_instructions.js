@@ -5,7 +5,7 @@
 
 const params = new URLSearchParams(window.location.search);
 const type = params.get("p") || "Knee";
-
+let arStarting = false;
 
 /* --------------------------------------------------------
    Instructions Data
@@ -99,7 +99,7 @@ function ensureARDom() {
     row.id = "ar-action-row";
 
     row.style.position = "fixed";
-    row.style.bottom = "30px";
+    row.style.bottom = `calc(1.5rem + env(safe-area-inset-bottom))`;
     row.style.left = "20px";
     row.style.right = "20px";
     row.style.display = "flex";
@@ -143,36 +143,90 @@ function loadScript(src) {
     document.head.appendChild(script);
   });
 }
+
 /* --------------------------------------------------------
    START AR (clean + correct)
 -------------------------------------------------------- */
 measureBtn.onclick = async () => {
+   if (arStarting) return;
+   arStarting = true;
+  if (type === "Wrist" || type === "Elbow") {
+    window.location.href =
+      `/pages/iOS/iOS_ComingSoon.html` +
+      `?type=${encodeURIComponent(type)}`;
+    return;
+  }
+
 
   ensureARDom();
 
-  // Load Knee Model
-  if (!window.KneeModel) {
-    try {await loadScript("/js/iOS/iOS_Model_Knee.js");
-    } catch (e) {return;}
+if (type === "Ankle") {
+
+  if (!window.AnkleModel) {
+    try {
+      await loadScript("/js/iOS/iOS_Model_Ankle.js");
+    } catch (e) { arStarting = false;return; }
   }
+
+  if (!window.AnkleOverlay) {
+    try {
+      await loadScript("/js/iOS/iOS_Overlay_Ankle.js");
+    } catch (e) { arStarting = false;return; }
+  }
+
+  if (!window.AnkleTilt) {
+    try {
+      await loadScript("/js/iOS/iOS_Tilt_Ankle.js");
+    } catch (e) { arStarting = false;return; }
+  }
+
+  if (!window.AnkleCalButton) {
+    try {
+      await loadScript("/js/iOS/iOS_CalibrationButton_Ankle.js");
+    } catch (e) { arStarting = false;return; }
+  }
+
+  if (!window.AnkleToast) {
+    try {
+      await loadScript("/js/iOS/iOS_Toast_Ankle.js");
+    } catch (e) { arStarting = false;return; }
+  }
+
+} else {
+
+  if (!window.KneeModel) {
+    try {
+      await loadScript("/js/iOS/iOS_Model_Knee.js");
+    } catch (e) { arStarting = false;return; }
+  }
+
   if (!window.KneeOverlay) {
-    try {await loadScript("/js/iOS/iOS_Overlay_Knee.js");
-    } catch (e) {return;}
-}
+    try {
+      await loadScript("/js/iOS/iOS_Overlay_Knee.js");
+    } catch (e) { arStarting = false;return; }
+  }
+
   if (!window.KneeTilt) {
-    try {await loadScript("/js/iOS/iOS_Tilt_Knee.js");
-    } catch (e) {return;}
-}
+    try {
+      await loadScript("/js/iOS/iOS_Tilt_Knee.js");
+    } catch (e) { arStarting = false;return; }
+  }
 
   if (!window.KneeCalButton) {
-    try {await loadScript("/js/iOS/iOS_CalibrationButton_Knee.js");
-    } catch (e) {return;}
-}
+    try {
+      await loadScript("/js/iOS/iOS_CalibrationButton_Knee.js");
+    } catch (e) { arStarting = false;return; }
+  }
 
   if (!window.KneeToast) {
-    try {await loadScript("/js/iOS/iOS_Toast_Knee.js");
-    } catch (e) {return;}
+    try {
+      await loadScript("/js/iOS/iOS_Toast_Knee.js");
+    } catch (e) { arStarting = false;return; }
+  }
 }
+
+
+
   // Request iOS motion permission
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
@@ -186,11 +240,12 @@ measureBtn.onclick = async () => {
 
       if (permission !== "granted") {
         alert("Motion access is required.");
+        arStarting = false;
         return;
       }
 
     } catch (e) {
-      console.error("Motion permission denied:", e);
+      arStarting = false;
       return;
     }
   }
@@ -198,12 +253,14 @@ measureBtn.onclick = async () => {
   // Hide entire instructions UI
   container.style.display = "none";
   measureBtn.style.display = "none";
-
   document.body.style.background = "#000";
-
+  const homeBtn = document.querySelector(".home-btn");
+  if (homeBtn) { homeBtn.style.display = "none";}
+if (!window.xrCanvas) {
   window.xrCanvas = document.createElement("canvas");
   window.xrCanvas.id = "xr8-canvas";
   document.body.appendChild(window.xrCanvas);
+}
 
   window.startAR = function () {
     try {
@@ -214,7 +271,7 @@ measureBtn.onclick = async () => {
         }
       });
     } catch (e) {
-      console.error("XR start failed:", e);
+      arStarting = false;
     }
   };
 

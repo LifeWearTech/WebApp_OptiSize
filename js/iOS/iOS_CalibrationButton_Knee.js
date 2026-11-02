@@ -97,7 +97,7 @@ function updateButton(
 
   btn.textContent =
     tiltValid
-      ? "Tap to Calibrate"
+      ? "Calibrate"
       : "Tilt Phone Up";
 }
 

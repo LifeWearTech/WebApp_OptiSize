@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,6 +6,7 @@
 <title>Contact Us</title>
 
 <style>
+
 body{
     margin:0;
     background:#eae6e6;
@@ -14,14 +14,12 @@ body{
 }
 
 .container{
-    padding:30px 16px 30px 16px;
+    padding:60px 16px 30px 16px;
 }
-
 
 .logo{
     text-align:center;
 }
-
 
 .logo img{
     height:100px;
@@ -31,7 +29,6 @@ body{
     display:block;
     margin:0 auto;
 }
-
 
 .divider{
     margin-top:20px;
@@ -46,6 +43,8 @@ body{
     font-size:24px;
     font-weight:bold;
     font-style:italic;
+
+    text-align:center;
 }
 
 .contact-row{
@@ -55,9 +54,8 @@ body{
 }
 
 .icon{
-    width:28px;
-    min-width:28px;
-    color:#9d0101;
+    width:32px;
+    min-width:32px;
     font-size:24px;
 }
 
@@ -68,6 +66,7 @@ body{
     font-size:18px;
     font-weight:bold;
     font-style:italic;
+
     text-decoration:underline;
     word-break:break-word;
 }
@@ -76,29 +75,30 @@ body{
     color:black;
 }
 
-
-.back{
-    position:fixed;
-    top:10px;
-    right:16px;
-    z-index:1000;
+/* Home Button */
+.home-btn{
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+    text-decoration: none;
+    z-index: 1000;
 }
 
-a{
-    color:#2563eb;
-    text-decoration:none;
-    font-weight:500;
-}
 </style>
-
-<!-- Material Icons -->
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body>
 
+<a href="/main_iOS.html" class="home-btn"  aria-label="Home"> 🏠</a>
+
 <div class="container">
-    <a href="/" class="back"><span class="material-icons">home</span></a>
+
     <div class="logo">
         <img src="/assets/icons/MainIcon2.png" alt="Logo">
     </div>
@@ -106,35 +106,35 @@ a{
     <div class="divider"></div>
 
     <div class="title">
+
     </div>
 
     <div class="contact-row">
-        <span class="material-icons icon">phone</span>
-        <a class="contact-link" href="tel:1-800-803-6025">
-            1-800-803-6025
+        <span class="icon">📞</span>
+        <a class="contact-link" href="tel:954-785-1055">
+            954-785-1055
         </a>
     </div>
 
-    
-<div class="contact-row">
-    <span class="material-icons icon">language</span>
-    <a class="contact-link"
-       href="https://www.lifeweartechnologies.com"
-       target="_blank"
-       rel="noopener noreferrer">
-        www.lifeweartechnologies.com
-    </a>
-</div>
+    <div class="contact-row">
+        <span class="icon">🌐</span>
+        <a
+            class="contact-link"
+            href="https://www.lifeweartechnologies.com"
+            target="_blank"
+            rel="noopener noreferrer">
+            www.lifeweartechnologies.com
+        </a>
+    </div>
 
-
- 
-<div class="contact-row">
-    <span class="material-icons icon">email</span>
-    <a class="contact-link" href="mailto:customercare@lifeweartechnologies.com">
-        customercare@lifeweartechnologies.com
-    </a>
-</div>
-
+    <div class="contact-row">
+        <span class="icon">✉️</span>
+        <a
+            class="contact-link"
+            href="mailto:customercare@lifeweartechnologies.com">
+            customercare@lifeweartechnologies.com
+        </a>
+    </div>
 
 </div>
 

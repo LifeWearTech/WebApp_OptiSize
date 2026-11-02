@@ -80,7 +80,7 @@ function drawRulerOverlay(widthIn, tiltDeg) {
   const h = screenHeight;
   const green = "#4CAF50";
   const red = "#F44336";
-  const color = Math.abs(tiltDeg) > 10 ? green : red;
+  const color = Math.abs(tiltDeg) >= 10 ? green : red;
   const referenceCircumference = 7.6;
   const scale = Math.max(0.4,Math.min(widthIn / referenceCircumference, 1.0));
   const rulerWidth = w * 0.44 * scale;

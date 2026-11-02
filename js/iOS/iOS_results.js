@@ -229,6 +229,17 @@ function renderSeeRecommendationsButton(products, selectedProduct) {
 }
 
 /* ------------------------
+   Home Button
+------------------------- */
+
+const homeBtn = document.createElement("a");
+homeBtn.href = "/main_iOS.html";
+homeBtn.textContent = "🏠";
+homeBtn.className = "home-btn";
+document.body.appendChild(homeBtn);
+
+
+/* ------------------------
    Boot
 ------------------------- */
 loadAndEvaluate();

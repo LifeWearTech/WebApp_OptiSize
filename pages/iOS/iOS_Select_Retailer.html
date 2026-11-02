@@ -10,6 +10,7 @@
   <style>
     body {
       margin: 0;
+      padding-top: env(safe-area-inset-top);
 
       /* ✅ MATCH MAIN ANDROID */
       --bg-color: #eae6e6;
@@ -69,26 +70,32 @@ select {
       cursor: pointer;
       width: 100%;
     }
-  
-/* Home Button */
-.home-btn{
-  position:fixed;
-  top:16px;
-  right:16px;
 
-  color:#2563eb;
-  text-decoration:none;
+    button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+   }   
 
-  z-index:1000;
+    .home-btn {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 28px;
+  text-decoration: none;
+  z-index: 1000;
 }
+  
   </style>
 </head>
 
 <body>
 
-  
-<a href="/" class="home-btn"><span class="material-icons">home</span></a>
-
+ 
 <div class="container">
 
 
@@ -112,6 +119,7 @@ select {
 
   try {
     const res = await fetch("/assets/ProductData/ProductsJsonFile.json");
+    if (!res.ok) {throw new Error(`Failed to load retailers (${res.status})`);}
     const products = await res.json();
 
     const retailers = products
@@ -135,6 +143,7 @@ select {
   } catch (err) {
     console.error(err);
     select.innerHTML = "<option>Error loading retailers</option>";
+    button.disabled = true;
   }
 
   button.onclick = () => {
@@ -150,6 +159,16 @@ select {
     window.location.href = url;
   };
 
+
+  /* ------------------------
+     Home Button
+  ------------------------- */
+const homeBtn = document.createElement("a");
+homeBtn.href = "/main_iOS.html";
+homeBtn.textContent = "🏠";
+homeBtn.className = "home-btn";
+document.body.appendChild(homeBtn);
+  
 })();
 </script>
 

@@ -22,34 +22,39 @@
     main {
       padding-bottom: 6.5rem;
     }
-
-    /* ===============================
-       ✅ HEADER (BACK + TITLE)
-    =============================== */
-    .scan-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
   
-/* ✅ HOME BUTTON */
-#back-btn {
-  font-size: 28px;
-  color: #4ea3ff;
-  cursor: pointer;
+.scan-header {
+  margin-top: env(safe-area-inset-top);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin-bottom: 20px; /* spacing below header */
+  min-height: 44px;
 }
 
+.scan-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
 
-    /* ✅ TITLE */
-    .scan-header h2 {
-      margin: 0;
-      flex: 1;
-      text-align: center;
-      font-size: 24px;
-      font-weight: 700;
-    }
+.home-btn {
+  position: absolute;
+  right: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+
+  font-size: 28px;
+  text-decoration: none;
+}
 
     /* ===============================
        ✅ PRODUCT CARD
@@ -135,6 +140,7 @@
     #continue-btn {
       background: #666;
       cursor: not-allowed;
+
     }
 
     #continue-btn.enabled {
@@ -157,13 +163,13 @@
 =============================== -->
 
 <div class="scan-header">
-  <div></div>
-
   <h2>Scanned Product</h2>
 
-  <div id="back-btn">
-    <span class="material-icons">home</span>
-  </div>
+  <a href="/main_iOS.html"
+     class="home-btn"
+     aria-label="Home">
+    🏠
+  </a>
 </div>
 
 
@@ -194,13 +200,6 @@
   let continueInProgress = false;
 
   /* ===============================
-     ✅ BACK BUTTON
-  =============================== */
-  document.getElementById("back-btn").onclick = function () {
-    window.location.href = "/main_iOS.html";
-  };
-
-  /* ===============================
      ✅ NORMALIZE BARCODE
   =============================== */
   function normalizeBarcode(code) {
@@ -219,8 +218,6 @@
   } else {
     container.textContent = "No barcode provided.";
   }
-
-
 
 
   async function loadProduct(barcode) {

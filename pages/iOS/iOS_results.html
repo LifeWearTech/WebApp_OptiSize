@@ -28,13 +28,13 @@
       padding: 1rem;
     }
 
-    h2 {
-      text-align: center;
-      margin: 0 0 1rem 0;
-      font-size: 24px;
-      font-weight: 700;
-      color: black;   /* ✅ ADD THIS LINE */
-    }
+h2 {
+  text-align: center;
+  margin: 0 48px 1rem 48px;
+  font-size: 24px;
+  font-weight: 700;
+  color: black;
+}
 
     /* =========================
        Product card
@@ -78,6 +78,24 @@
       margin-top: 10px;
     }
 
+    .home-btn {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+
+  font-size: 28px;
+  text-decoration: none;
+  color: inherit;
+
+  z-index: 1000;
+}
     /* =========================
        Fit badge
        ========================= */

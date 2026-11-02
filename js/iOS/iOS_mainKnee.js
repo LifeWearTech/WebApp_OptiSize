@@ -21,7 +21,7 @@ let previousPosition = null;
 let previousQuaternion = null;
 let startupToastShown = false;
 let trackingUnstable = false;
-
+let lastDrawnTiltDeg = null;
 
 const MAX_TRACKING_JUMPS = 3;
 const MAX_BAD_TRACKING_FRAMES = 60;
@@ -32,15 +32,30 @@ const MAX_CAL_HEIGHT_IN = 39;
 let cachedWidthIn = 6.0;
 const MIN_TILT_DEG = 20;
 const MIN_VALID_DELTA_IN = 0.005;
-const MAX_VALID_DELTA_IN = 0.5;
 const SMOOTHEDRATE_THRES = 1.25;
 const POSE_JUMP_THRESHOLD_IN =1;
-const ROT_JUMP_THRESHOLD_IN =5;
+const ROT_JUMP_THRESHOLD_DEG =5;
 const FRAME_TIME=0.25;
 const RAW_RATEBUFFERLENGTH=20;
 const SMOOTH_RATEBUFFERLENGTH=5;
 let trackingJumpCount = 0;
 let trackingBadFrames = 0;
+let orientationChangeHandler = null;
+let lastTrackingToastMs = 0;
+const CAMERA_TO_WAIST_OFFSET_IN = 2;
+const TRACKING_TOAST =  "Tracking Unstable. Hold Close to Waist and Tap Calibrate Again";
+const INITIAL_TOAST =  "Hold Phone Close to Waist then Tap Calibrate";
+
+function showTrackingToast() {
+  const now = Date.now();
+  if (now - lastTrackingToastMs < 5000) { return;}
+  lastTrackingToastMs = now;
+  window.KneeToast.showToast(TRACKING_TOAST,5000);
+}
+
+function isPortraitOrientation() {
+  return window.innerHeight > window.innerWidth;
+}
 
 
 function stopAR() {
@@ -55,12 +70,18 @@ function stopAR() {
     calibrationBuffer.length = 0;
     previousPosition = null;
     previousQuaternion = null;
+    lastDrawnTiltDeg = null;
     cachedWidthIn = 6.0;
     lastDrawnWidth = -1;
     trackingUnstable = false;
     trackingJumpCount = 0;
     trackingBadFrames = 0;
-    XR8.stop();
+    updateRecommendationButton(false);
+        if (orientationChangeHandler) {window.removeEventListener("orientationchange", orientationChangeHandler);
+      window.removeEventListener("resize", orientationChangeHandler);
+      orientationChangeHandler = null;
+    }
+    try {XR8.stop();} catch (e) {console.error(e);}
   } catch (e) {
     console.error(e);
   }
@@ -68,7 +89,7 @@ function stopAR() {
 }
 
 function updateRecommendationButton(enabled) {
-  const btn = document.getElementById("exit-ar-btn");
+  const btn = recommendationBtn;
   if (!btn) return;
   btn.disabled = !enabled;
   btn.style.opacity = enabled ? "1.0" : "0.5";
@@ -84,17 +105,18 @@ function processCalibration(cameraYIn) {
   if (calibrationBuffer.length <CALIBRATION_BUFFER_SIZE) {return true;}
   let sum = 0;
   for (let i = 0; i < calibrationBuffer.length; i++) {sum += calibrationBuffer[i];}
-  const avgHeight =  sum / calibrationBuffer.length-2;
+  const avgHeight = (sum / calibrationBuffer.length) - CAMERA_TO_WAIST_OFFSET_IN;
   if (avgHeight >= MIN_CAL_HEIGHT_IN && avgHeight <= MAX_CAL_HEIGHT_IN) {
-    calibrationHeightIn = avgHeight;
-    const btn =document.getElementById("calibrate-btn");
-    if (btn) {btn.disabled = false; btn.style.background = "#1976D2"; }
-    return true;
-  }
+  calibrationHeightIn = avgHeight;
+  const btn = document.getElementById("calibrate-btn");
+  if (btn) {btn.disabled = false; btn.style.background = "#1976D2";}
+  updateRecommendationButton(true);
+  return true;
+}
   calibrationBuffer.length = 0;
   calibrationHeightIn = null;
   measurementEnabled = false;
-  recommendationBtn.style.display ="none";
+  updateRecommendationButton(false);
   window.KneeOverlay.removeRulerCanvas();
   totalOffsetIn = 0;
   previousCameraYIn = null;
@@ -103,13 +125,13 @@ function processCalibration(cameraYIn) {
   cachedWidthIn = 6.0;
   previousPosition = null;
   previousQuaternion = null;  
-  window.KneeToast.showToast("Calibration Failed. Tap Again to Calibrate", 5000);
+  showTrackingToast();
   return true;
 }
 
 function processMovement(cameraYIn, rotJump, posJump) {
 
-  const trackingBad = rotJump >= ROT_JUMP_THRESHOLD_IN ||   posJump >= POSE_JUMP_THRESHOLD_IN;
+  const trackingBad = rotJump >= ROT_JUMP_THRESHOLD_DEG ||   posJump >= POSE_JUMP_THRESHOLD_IN;
 
   // =========================================
   // TRACKING HEALTH MONITOR
@@ -124,8 +146,8 @@ function processMovement(cameraYIn, rotJump, posJump) {
       // Too many tracking disturbances
       if (trackingJumpCount >= MAX_TRACKING_JUMPS) {
         measurementEnabled = false;
-        recommendationBtn.style.display = "none";
-        window.KneeToast.showToast("Tracking Unstable. Hold Close to Waist and Tap Calibrate Again", 5000);
+        updateRecommendationButton(false);
+        window.KneeToast.showToast(TRACKING_TOAST, 5000);
         trackingJumpCount = 0;
       }
     }
@@ -133,8 +155,8 @@ function processMovement(cameraYIn, rotJump, posJump) {
     // Tracking bad continuously too long
     if (trackingBadFrames >= MAX_BAD_TRACKING_FRAMES) {
       measurementEnabled = false;
-      recommendationBtn.style.display = "none";
-      window.KneeToast.showToast(  "Tracking Unstable. Hold Close to Waist and Tap Calibrate Again",5000);
+      updateRecommendationButton(false);
+      window.KneeToast.showToast(TRACKING_TOAST,5000);
       trackingBadFrames = 0;
       trackingJumpCount = 0;
     }
@@ -199,22 +221,28 @@ function updateWidth(smoothedRate,dt) {
 }
 
 function updateOverlay() {
-  const widthChanged =Math.abs(cachedWidthIn - lastDrawnWidth) > 0.05;
-  if (!widthChanged) return;
-  window.KneeOverlay.drawRulerOverlay(cachedWidthIn,window.KneeTilt.TILT.pitchDeg);
+
+  const currentTiltDeg = Math.abs(window.KneeTilt.TILT.pitchDeg);
+  const widthChanged = Math.abs(cachedWidthIn - lastDrawnWidth) > 0.05;
+  const tiltChanged = lastDrawnTiltDeg === null || Math.abs(currentTiltDeg - lastDrawnTiltDeg) > 1.0;
+  if (!widthChanged && !tiltChanged) { return;}
+  window.KneeOverlay.drawRulerOverlay(cachedWidthIn, currentTiltDeg );
   lastDrawnWidth = cachedWidthIn;
+  lastDrawnTiltDeg = currentTiltDeg;
 }
 
 window.wireXR = function () {
   exitBtn.style.display = "block";
-  recommendationBtn.style.display = "none";
+  recommendationBtn.style.display = "block";
+  updateRecommendationButton(false);
+
    measurementEnabled = false;   
   // =========================================
 // BUTTON LAYOUT
 // =========================================
 
 exitBtn.style.position = "fixed";
-const buttonTop = `${window.innerHeight * 0.08}px`; // 5% of screen height
+const buttonTop = `max(${window.innerHeight * 0.08}px, calc(env(safe-area-inset-top) + 16px))`;
 exitBtn.style.top = buttonTop;
 recommendationBtn.style.top = buttonTop;
 exitBtn.style.left = "20px";
@@ -245,11 +273,19 @@ XR8.XrController.configure({
       name: "Knee_Meas",
 onStart: function () {
   xrCamera = XR8.Threejs.xrScene().camera;
+  orientationChangeHandler = () => {
+  if (!isPortraitOrientation()) {
+    stopAR();
+    setTimeout(() => {window.history.back(); }, 500);}
+};
+
+  window.addEventListener("orientationchange",orientationChangeHandler);
+  window.addEventListener("resize",orientationChangeHandler);
   window.KneeOverlay.createRulerCanvas();
   window.KneeTilt.createIndicator();
     if (!startupToastShown) {
     startupToastShown = true;
-    window.KneeToast.showToast("Hold Phone Close to Waist then Tap Calibrate",5000);
+    window.KneeToast.showToast(INITIAL_TOAST,5000);
   }
 
   const calibrateBtn =window.KneeCalButton.createButton();
@@ -260,6 +296,7 @@ onStart: function () {
       lastTiltValid = null;
       previousPosition = null;
       previousQuaternion = null;
+      lastDrawnTiltDeg = null;
       XR8.stop();
       xrCamera = null;
     } catch (e) {
@@ -281,7 +318,7 @@ onStart: function () {
       enableLighting: false,
       scale: "absolute"
     });
-    recommendationBtn.style.display =  "block";
+    updateRecommendationButton(false);
     measurementEnabled = true;
     window.startAR();
   };
@@ -290,12 +327,14 @@ onUpdate: function () {
   if (!xrCamera) return;
   const tiltDeg = Math.abs(window.KneeTilt.TILT.pitchDeg);
   window.KneeTilt.updateIndicator(tiltDeg,MIN_TILT_DEG);
-  const tiltValid =tiltDeg >= (MIN_TILT_DEG - 10);
-  if (lastTiltValid !== tiltValid) {
-    window.KneeCalButton.updateButton(tiltValid);
-    updateRecommendationButton(tiltValid);
-    lastTiltValid = tiltValid;
-  }
+const tiltValid = tiltDeg >= (MIN_TILT_DEG - 10);
+
+if (lastTiltValid !== tiltValid) {
+  window.KneeCalButton.updateButton(tiltValid); 
+  lastTiltValid = tiltValid;
+}
+const recommendationEnabled = calibrationHeightIn !== null &&  tiltValid &&  measurementEnabled;
+updateRecommendationButton(recommendationEnabled);
 
   if (!startMatrix) {
     xrCamera.updateMatrixWorld(true);
@@ -305,6 +344,7 @@ onUpdate: function () {
     lastDrawnWidth = -1;
     return;
   }
+  if (!Number.isFinite(xrCamera.position.y)) {return;}
   const cameraYIn = xrCamera.position.y * M_TO_IN;
   const posJump = xrCamera.position.distanceTo(previousPosition) * M_TO_IN;
   const rotJump =THREE.MathUtils.radToDeg(previousQuaternion.angleTo(xrCamera.quaternion)
@@ -327,17 +367,29 @@ exitBtn.onclick = () => {
 };
 
 recommendationBtn.onclick = () => {
-  const widthIn = cachedWidthIn;
+  const widthIn = Number(cachedWidthIn.toFixed(2)); 
   stopAR();
   const params = new URLSearchParams(window.location.search);
+
   const type = params.get("p") || "Knee";
   const productId = params.get("prod") || "";
-  window.location.href =
-    `/pages/iOS/iOS_results.html` +
-    `?width=${encodeURIComponent(widthIn)}` +
-    `&type=${encodeURIComponent(type)}` +
-    `&prod=${encodeURIComponent(productId)}`;
-};
 
+  // Product already selected
+  if (productId) {
+    window.location.href =
+      `/pages/iOS/iOS_results.html` +
+      `?width=${encodeURIComponent(widthIn)}` +
+      `&type=${encodeURIComponent(type)}` +
+      `&prod=${encodeURIComponent(productId)}`;
+
+    return;
+  }
+
+  // No product selected → Select Retailer flow
+  window.location.href =
+    `/pages/iOS/iOS_Select_Retailer.html` +
+    `?type=${encodeURIComponent(type)}` +
+    `&width=${encodeURIComponent(widthIn)}`;
+};
 })();
 

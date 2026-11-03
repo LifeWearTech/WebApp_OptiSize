@@ -313,12 +313,18 @@ const products = await response.json();
   =============================== */
    
 continueBtn.onclick = function () {
-
   if (continueInProgress) return;
-
   if (!selectedProduct) return;
 
   continueInProgress = true;
+
+  const productType = (selectedProduct.product_type || "").toLowerCase();
+
+  // Wrist and Elbow not supported yet
+  if (productType === "wrist" || productType === "elbow") {
+    window.location.href = "/pages/iOS/iOS_ComingSoon.html";
+    return;
+  }
 
   window.location.href =
     "/pages/iOS/iOS_instructions.html" +

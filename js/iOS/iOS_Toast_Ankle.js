@@ -62,6 +62,17 @@ function showToast(message, duration = 2500) {
   }, duration);
 }
 
+function hideToast() {
+  const existingToast =
+    document.getElementById("calibration-toast");
+
+  if (!existingToast) return;
+
+  clearTimeout(existingToast._timer);
+  existingToast.remove();
+}
+
 window.AnkleToast = {
-  showToast
+  showToast,
+  hideToast
 };

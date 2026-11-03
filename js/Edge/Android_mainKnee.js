@@ -232,7 +232,7 @@ function startTiltSensing() {
 
       updateRecommendationButton(false);
     }
-  }, 3000);
+  }, 10000);
 }
 
 function updateRecommendationButton(enabled) {

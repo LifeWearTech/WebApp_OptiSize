@@ -164,19 +164,23 @@ loadProducts();
 /* --------------------------------------------------------
    3. Continue → Instructions (TYPE + PRODUCT ID)
 -------------------------------------------------------- */
-
 continueBtn.onclick = () => {
   if (!selectedProduct) return;
 
   const type = selectedProduct.product_type;
   const productId = selectedProduct.id;
 
-  
-window.location.href =
-  `/pages/Edge/Android_instructions.html` +
-  `?p=${encodeURIComponent(type)}` +
-  `&prod=${encodeURIComponent(productId)}` +
-  `&retailer=${encodeURIComponent(selectedRetailer)}`;
+  // Wrist and Elbow are not yet supported on iOS
+  if (
+    ["wrist", "elbow"].includes((type || "").toLowerCase())
+  ) {
+    window.location.href = "/pages/Edge/Android_ComingSoon.html";
+    return;
+  }
 
+  window.location.href =
+    `/pages/Edge/Android_instructions.html` +
+    `?p=${encodeURIComponent(type)}` +
+    `&prod=${encodeURIComponent(productId)}` +
+    `&retailer=${encodeURIComponent(selectedRetailer)}`;
 };
-

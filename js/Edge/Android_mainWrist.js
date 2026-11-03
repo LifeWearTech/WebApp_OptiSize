@@ -156,19 +156,45 @@ export async function startMain() {
 // ---------------------------------------------------------
 // TILT SENSOR INITIALIZATION
 // ---------------------------------------------------------
-async function startTiltSensing() {
-  try {
-    window.addEventListener("deviceorientation", e => {
-      const pitch = clamp(e.beta ?? 0, -180, 180);
-      const roll  = clamp(e.gamma ?? 0, -90, 90);
-      TILT.pitchDeg = ema(TILT.pitchDeg, pitch);
-      TILT.rollDeg  = ema(TILT.rollDeg, roll);
-      TILT.ready = true;
-    }, { passive:true });
-  } catch {
-    TILT.ready = false;
-  }
+function startTiltSensing() {
+  TILT.ready = false;
+
+  orientationListener = (e) => {
+    if (
+      e.beta === null ||
+      e.gamma === null
+    ) {
+      return;
+    }
+
+    const pitch = clamp(e.beta, -180, 180);
+    const roll = clamp(e.gamma, -90, 90);
+
+    TILT.pitchDeg = ema(TILT.pitchDeg, pitch);
+    TILT.rollDeg = ema(TILT.rollDeg, roll);
+
+    TILT.ready = true;
+  };
+
+  window.addEventListener(
+    "deviceorientation",
+    orientationListener,
+    { passive: true }
+  );
+
+  // Fail-safe if sensor never starts
+  tiltTimeoutId = setTimeout(() => {
+    if (!TILT.ready) {
+      HUD.error(
+        "Orientation sensor unavailable.\n" +
+        "Tilt detection is not working."
+      );
+
+      updateRecommendationButton(false);
+    }
+  }, 10000);
 }
+
 
 
 

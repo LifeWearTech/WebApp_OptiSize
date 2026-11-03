@@ -227,7 +227,7 @@ window.addEventListener(
       updateRecommendationButton(false);
     }
 
-  }, 3000);
+  }, 10000);
 }
 
 

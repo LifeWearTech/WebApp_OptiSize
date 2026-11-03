@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coming Soon</title>
+
+<style>
+
+/* ===============================
+   PAGE
+=============================== */
+body {
+  margin: 0;
+  background: #eae6e6;
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* ===============================
+   STANDARD HOME BUTTON
+=============================== */
+.home-btn {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+
+  font-size: 28px;
+  text-decoration: none;
+  color: inherit;
+
+  z-index: 1000;
+}
+
+/* ===============================
+   CENTER CONTENT
+=============================== */
+.coming-soon {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 85%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.title {
+  color: rgb(188, 2, 2);
+  font-size: 38px;
+  font-weight: bold;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  color: #333;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+</style>
+</head>
+
+<body>
+
+<a href="/main_Edge.html"
+   class="home-btn"
+   aria-label="Home">
+  🏠
+</a>
+
+<div class="coming-soon">
+  <div class="title">
+    Coming Soon
+  </div>
+
+  <div class="subtitle">
+    Wrist and Elbow measurement features are currently under development.
+    Please check back in a future release.
+  </div>
+</div>
+
+</body>
+</html>

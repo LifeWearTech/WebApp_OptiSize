@@ -45,13 +45,17 @@ let lastTrackingToastMs = 0;
 const CAMERA_TO_WAIST_OFFSET_IN = 2;
 const TRACKING_TOAST =  "Tracking Unstable. Hold Close to Waist and Tap Calibrate Again";
 const INITIAL_TOAST =  "Hold Phone Close to Waist then Tap Calibrate";
+const CAL_FAILED_TOAST= "Calibration Failed. Tap to Calibrate Again";
+const TRACKING_TOAST_DURATION = 10000;
+const TRACKING_TOAST_COOLDOWN = 5000;
 
-function showTrackingToast() {
+function showTrackingToast(message) {
   const now = Date.now();
-  if (now - lastTrackingToastMs < 5000) { return;}
+  if (now - lastTrackingToastMs < TRACKING_TOAST_COOLDOWN) {return;}
   lastTrackingToastMs = now;
-  window.KneeToast.showToast(TRACKING_TOAST,5000);
+  window.KneeToast.showToast(message,TRACKING_TOAST_DURATION);
 }
+
 
 function isPortraitOrientation() {
   return window.innerHeight > window.innerWidth;
@@ -108,8 +112,10 @@ function processCalibration(cameraYIn) {
   const avgHeight = (sum / calibrationBuffer.length) - CAMERA_TO_WAIST_OFFSET_IN;
   if (avgHeight >= MIN_CAL_HEIGHT_IN && avgHeight <= MAX_CAL_HEIGHT_IN) {
   calibrationHeightIn = avgHeight;
+  window.KneeToast.hideToast();
+  lastTrackingToastMs = 0;
   const btn = document.getElementById("calibrate-btn");
-  if (btn) {btn.disabled = false; btn.style.background = "#1976D2";}
+  if (btn) {btn.disabled = true; btn.style.background = "#666";}
   updateRecommendationButton(true);
   return true;
 }
@@ -125,7 +131,9 @@ function processCalibration(cameraYIn) {
   cachedWidthIn = 6.0;
   previousPosition = null;
   previousQuaternion = null;  
-  showTrackingToast();
+  const btn = document.getElementById("calibrate-btn");
+  if (btn) {btn.disabled = false;btn.style.background = "#1976D2";}
+  showTrackingToast(CAL_FAILED_TOAST);
   return true;
 }
 
@@ -147,7 +155,9 @@ function processMovement(cameraYIn, rotJump, posJump) {
       if (trackingJumpCount >= MAX_TRACKING_JUMPS) {
         measurementEnabled = false;
         updateRecommendationButton(false);
-        window.KneeToast.showToast(TRACKING_TOAST, 5000);
+        const btn = document.getElementById("calibrate-btn");
+        if (btn) {btn.disabled = false; btn.style.background = "#1976D2";}
+        showTrackingToast(TRACKING_TOAST);
         trackingJumpCount = 0;
       }
     }
@@ -156,7 +166,9 @@ function processMovement(cameraYIn, rotJump, posJump) {
     if (trackingBadFrames >= MAX_BAD_TRACKING_FRAMES) {
       measurementEnabled = false;
       updateRecommendationButton(false);
-      window.KneeToast.showToast(TRACKING_TOAST,5000);
+      const btn = document.getElementById("calibrate-btn");
+      if (btn) {btn.disabled = false; btn.style.background = "#1976D2";}
+      showTrackingToast(TRACKING_TOAST);
       trackingBadFrames = 0;
       trackingJumpCount = 0;
     }
@@ -289,6 +301,8 @@ onStart: function () {
   }
 
   const calibrateBtn =window.KneeCalButton.createButton();
+  calibrateBtn.disabled = false;
+  calibrateBtn.style.background = "#1976D2";
   calibrateBtn.onclick = async () => {
     try {
       calibrationBuffer.length = 0;

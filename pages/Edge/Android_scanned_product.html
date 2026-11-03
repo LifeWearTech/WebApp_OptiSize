@@ -316,18 +316,21 @@ const products = await response.json();
   =============================== */
    
 continueBtn.onclick = function () {
-
   if (continueInProgress) return;
-
   if (!selectedProduct) return;
-
   continueInProgress = true;
-
+  const productType = (selectedProduct.product_type || "").toLowerCase();
+  // Wrist and Elbow not supported yet
+  if (productType === "wrist" || productType === "elbow") {
+    window.location.href = "/pages/Edge/Android_ComingSoon.html";
+    return;
+  }
   window.location.href =
     "/pages/Edge/Android_instructions.html" +
     "?p=" + encodeURIComponent(selectedProduct.product_type) +
     "&prod=" + encodeURIComponent(selectedProduct.id);
 };
+
 
 
   /* ===============================
